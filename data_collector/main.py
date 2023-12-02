@@ -1,16 +1,24 @@
-# This is a sample Python script.
+import json
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+import pandas as pd
 
 
-# Press the green button in the gutter to run the script.
+# 获取目录
+def get_categories():
+    categories_map = {}
+    with open('./row_data/arxiv-metadata-oai-snapshot.json', 'r') as input_file:
+        for line in input_file:
+            json_obj = json.loads(line)
+            k = str(json_obj['categories'])
+            if categories_map.get(k) is None:
+                categories_map[k] = 1
+            else:
+                categories_map[k] += 1
+    with open('./row_data/categories.txt', 'w') as output_file:
+        for k in categories_map:
+            output_file.write("" + str(k) + "\t" + str(categories_map[k]) + '\n')
+
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    get_categories()
