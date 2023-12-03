@@ -1,2 +1,3 @@
 /data_collector/row_data/arxiv-metadata-oai-snapshot.json
 *.pdf
+/data_collector/row_data/arxiv_text/*.txt

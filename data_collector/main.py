@@ -1,8 +1,14 @@
+#encoding=utf-8
+
 import json
+import os
+
+import fitz
 
 import pandas as pd
 import requests
-
+import PyPDF2
+import textract
 
 # 获取目录
 def get_categories():
@@ -25,11 +31,29 @@ def download_pdf(pdf_id):
         r = requests.get(f"https://arxiv.org/pdf/{pdf_id}.pdf")
         if r.status_code == 200:
             f.write(r.content)
-            print(f'success:{pdf_id}')
+            print(f'download success:{pdf_id}')
         else:
-            print(f'fail:{pdf_id}')
+            print(f'download fail:{pdf_id}')
+
+
+def convert_pdf_to_txt(pdf_id):
+    try:
+        reader = fitz.open(f'./row_data/arxiv_pdf/{pdf_id}.pdf')
+        text = ""
+        for page in reader:
+            # text += str(page.get_text("blocks"))
+            for block in page.get_text("blocks"):
+                text += str(block[4] + '\n')
+        with open(f'./row_data/arxiv_text/{pdf_id}.txt', 'w', encoding='utf-8') as f:
+            f.write(text)
+        print(f"text success:{pdf_id}")
+    except Exception as e:
+        print(e)
+        print(f"text fail:{pdf_id}")
+
 
 
 if __name__ == '__main__':
     # get_categories()
-    download_pdf('0704.0001')
+    # download_pdf('0704.0002')
+    convert_pdf_to_txt('0704.0002')
