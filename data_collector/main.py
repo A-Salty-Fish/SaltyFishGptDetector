@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import requests
 
 
 # 获取目录
@@ -19,6 +20,16 @@ def get_categories():
             output_file.write("" + str(k) + "\t" + str(categories_map[k]) + '\n')
 
 
+def download_pdf(pdf_id):
+    with open(f'./row_data/arxiv_pdf/{pdf_id}.pdf', 'wb') as f:
+        r = requests.get(f"https://arxiv.org/pdf/{pdf_id}.pdf")
+        if r.status_code == 200:
+            f.write(r.content)
+            print(f'success:{pdf_id}')
+        else:
+            print(f'fail:{pdf_id}')
+
 
 if __name__ == '__main__':
-    get_categories()
+    # get_categories()
+    download_pdf('0704.0001')
