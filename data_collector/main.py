@@ -1,4 +1,4 @@
-#encoding=utf-8
+# encoding=utf-8
 
 import json
 import os
@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 import PyPDF2
 import textract
+
 
 # 获取目录
 def get_categories():
@@ -52,8 +53,29 @@ def convert_pdf_to_txt(pdf_id):
         print(f"text fail:{pdf_id}")
 
 
-
 if __name__ == '__main__':
     # get_categories()
     # download_pdf('0704.0002')
-    convert_pdf_to_txt('0704.0002')
+    # convert_pdf_to_txt('0704.0002')
+    # with open('./row_data/categories.txt', 'r') as f:
+    #     cn = 0
+    #     nn = 0
+    #     for line in f:
+    #         c = line.split('\t')[0]
+    #         n = line.split('\t')[1]
+    #         cn += 1
+    #         nn += int(n)
+    #     print(cn)
+    #     print(nn)
+    for dirpath, dirnames, filenames in os.walk('D:\\毕设\\数据\\M4-main\\data'):
+        for filename in filenames:
+            if filename.startswith('README'):
+                continue
+            with open('D:\\毕设\\数据\\M4-main\\data\\' + filename, 'r', encoding='utf-8') as f:
+                i = 0
+                for line in f:
+                    i += 1
+            pre_name = filename.split('.')[0]
+            model_name = pre_name.split('_')[-1]
+            domain_name = "_".join(pre_name.split('_')[0: -1])
+            print(domain_name + '\t' + model_name + '\t' + str(i))
