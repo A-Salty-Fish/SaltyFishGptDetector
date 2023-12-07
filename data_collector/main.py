@@ -53,6 +53,25 @@ def convert_pdf_to_txt(pdf_id):
         print(f"text fail:{pdf_id}")
 
 
+def download_by_category(categories, nums):
+    i = 0
+    with open('./row_data/arxiv-metadata-oai-snapshot.json', 'r') as input_file:
+        for line in input_file:
+            json_obj = json.loads(line)
+            category = str(json_obj['categories'])
+            for c in categories:
+                if category.startswith(c):
+                    i += 1
+                    if i < 798:
+                        break
+                    id = json_obj['id']
+                    print(f"download:{id}")
+                    download_pdf(id)
+                    break
+            if i > nums:
+                return
+
+
 if __name__ == '__main__':
     # get_categories()
     # download_pdf('0704.0002')
@@ -67,15 +86,4 @@ if __name__ == '__main__':
     #         nn += int(n)
     #     print(cn)
     #     print(nn)
-    for dirpath, dirnames, filenames in os.walk('D:\\毕设\\数据\\M4-main\\data'):
-        for filename in filenames:
-            if filename.startswith('README'):
-                continue
-            with open('D:\\毕设\\数据\\M4-main\\data\\' + filename, 'r', encoding='utf-8') as f:
-                i = 0
-                for line in f:
-                    i += 1
-            pre_name = filename.split('.')[0]
-            model_name = pre_name.split('_')[-1]
-            domain_name = "_".join(pre_name.split('_')[0: -1])
-            print(domain_name + '\t' + model_name + '\t' + str(i))
+    download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 2000)
