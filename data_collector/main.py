@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 import fitz
 
@@ -55,7 +56,7 @@ def convert_pdf_to_txt(pdf_id):
 
 def download_by_category(categories, nums):
     i = 0
-    num_files = len(os.listdir('./row_data/arxiv_pdf/'))
+    num_files = len(os.listdir('./row_data/arxiv_pdf/')) + 10
     with open('./row_data/arxiv-metadata-oai-snapshot.json', 'r') as input_file:
         for line in input_file:
             json_obj = json.loads(line)
@@ -89,4 +90,9 @@ if __name__ == '__main__':
     #     print(nn)
     # Get the number of files in the current directory
     # print(num_files)
-    download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 10000)
+    while True:
+        try:
+            download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 10000)
+        except Exception as e:
+            print(e)
+            time.sleep(5)
