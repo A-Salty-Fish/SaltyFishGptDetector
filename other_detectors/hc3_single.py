@@ -1,19 +1,22 @@
 # Use a pipeline as a high-level helper
 from transformers import pipeline
 
-# 论文：https://readpaper.com/pdf-annotate/note?pdfId=2039022531081315840&noteId=2039026233762594816
-# 网站：https://radar.vizhub.ai/
-# 模型：https://huggingface.co/spaces/TrustSafeAI/RADAR-AI-Text-Detector
+
+# 模型地址: https://huggingface.co/spaces/Hello-SimpleAI/chatgpt-detector-single/blob/main/app.py
+
+# auth_token = os.environ.get("access_token")
+# pipeline_en = pipeline(task="text-classification", model="Hello-SimpleAI/chatgpt-detector-roberta")
+# pipeline_zh = pipeline(task="text-classification", model="Hello-SimpleAI/chatgpt-detector-roberta-chinese")
 
 def init_classifier():
-    pipe = pipeline("text-classification", model="TrustSafeAI/RADAR-Vicuna-7B")
+    pipe = pipeline(task="text-classification", model="Hello-SimpleAI/chatgpt-detector-roberta")
 
     return pipe
 
 
 def classify_is_human(classfier, text, bar=0.50000):
     res_0 = classfier(text)[0]
-    if res_0['label'] == 'LABEL_0':
+    if res_0['label'] == 'ChatGPT':
         return res_0['score'] < bar
     else:
         return res_0['score'] >= bar
