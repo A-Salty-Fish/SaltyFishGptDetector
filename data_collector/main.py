@@ -55,6 +55,7 @@ def convert_pdf_to_txt(pdf_id):
 
 def download_by_category(categories, nums):
     i = 0
+    num_files = len(os.listdir('./row_data/arxiv_pdf/'))
     with open('./row_data/arxiv-metadata-oai-snapshot.json', 'r') as input_file:
         for line in input_file:
             json_obj = json.loads(line)
@@ -62,7 +63,7 @@ def download_by_category(categories, nums):
             for c in categories:
                 if category.startswith(c):
                     i += 1
-                    if i < 798:
+                    if i < num_files:
                         break
                     id = json_obj['id']
                     print(f"download:{id}")
@@ -86,4 +87,6 @@ if __name__ == '__main__':
     #         nn += int(n)
     #     print(cn)
     #     print(nn)
-    download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 2000)
+    # Get the number of files in the current directory
+    # print(num_files)
+    download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 10000)
