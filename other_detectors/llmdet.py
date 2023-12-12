@@ -200,8 +200,8 @@ text = "The actress was honoured for her role in 'The Reader' at the annual cere
 def classify_is_human(text, bar=0.5000):
     # Detect, `text` is a string or string list
     result = detect(text)
-    print(result)
+    # print(result)
     return result[0]['Human_write'] >= bar
 
 
-print(classify_is_human(text))
+# print(classify_is_human(text))
