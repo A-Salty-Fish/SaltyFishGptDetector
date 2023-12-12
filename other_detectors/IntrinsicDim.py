@@ -276,8 +276,12 @@ sample_text = "Speaking of festivities, there is one day in China that stands un
 # chatgpt_mle_train_en = get_phd(reddit_data.iloc[train_idx], 'gen_completion',is_list=False)
 
 
-def classify_is_human(text, bar=5):
-    phd = PHD(metric='euclidean', n_points=9)
+def init_phd_model(metric='euclidean', n_points=9):
+    return PHD(metric=metric, n_points=n_points)
+
+
+def classify_is_human(phd, text, bar=5):
+    # phd = PHD(metric='euclidean', n_points=9)
     score = get_phd_single(sample_text, phd)
     if score > bar:
         return False
@@ -286,4 +290,5 @@ def classify_is_human(text, bar=5):
 
 
 if __name__ == '__main__':
-    print(classify_is_human(sample_text))
+    phd = init_phd_model()
+    print(classify_is_human(phd, sample_text))
