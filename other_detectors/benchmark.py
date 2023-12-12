@@ -1,6 +1,7 @@
 # 各个算法比较
 
 import argparse
+import random
 import time
 from functools import partial
 
@@ -34,6 +35,7 @@ support_datasets = [
     'm4'
 ]
 
+
 def get_classifier(method):
     start_time = time.time()
 
@@ -56,7 +58,6 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'hc3_ling':
-
         model = None
 
         def classify(text):
@@ -66,6 +67,7 @@ def get_classifier(method):
 
     if method == 'hc3_single':
         model = hc3_single.init_classifier()
+
         def classify(text):
             return hc3_single.classify_is_human(model, text=text)
 
@@ -73,6 +75,7 @@ def get_classifier(method):
 
     if method == 'intrinsic-dim':
         model = hc3_single.init_classifier()
+
         def classify(text):
             return hc3_single.classify_is_human(model, text=text)
 
@@ -118,7 +121,7 @@ def get_classifier(method):
     return classifier
 
 
-def get_test_data(test_dataset, test_dataset_path, test_data_nums):
+def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True):
     start_time = time.time()
     result = {
         'human': [],
@@ -139,7 +142,12 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums):
         tmp_result = data_convertor.convert_m4(test_dataset_path)
 
     result['human'] = [x for x in tmp_result if x['label'] == 0]
-    result['ai'] = [x for x in tmp_result if x['label'] == 0]
+    result['ai'] = [x for x in tmp_result if x['label'] == 1]
+
+    if shuffle:
+        random.shuffle(result['human'])
+        random.shuffle(result['ai'])
+
 
     result['human'] = result['human'][0: min(test_data_nums, len(result['human']))]
     result['ai'] = result['ai'][0: min(test_data_nums, len(result['ai']))]
@@ -153,12 +161,72 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums):
     return result
 
 
+def simple_test(method, test_dataset, test_dataset_path, test_data_nums):
+    classifier = get_classifier(method)
+    data_set = get_test_data(test_dataset, test_dataset_path, test_data_nums)
+    print("test begin")
+    start_time = time.time()
+
+    human_true = 0
+    human_total = 0
+    human_true_rate = 0.0
+    ai_true = 0
+    ai_total = 0
+    ai_true_rate = 0.0
+    precision = 0.0
+    recall = 0.0
+    f1 = 0
+
+    for data in data_set['human'] + data_set['ai']:
+        content = data['content']
+        label = data['label']
+        if label == 0:
+            human_total += 1
+            if classifier(content):
+                human_true += 1
+        elif label == 1:
+            ai_total += 1
+            if not classifier(content):
+                ai_true += 1
+
+    if human_total != 0:
+        human_true_rate = human_true / human_total
+    if ai_total != 0:
+        ai_true_rate = ai_true / ai_total
+
+    if ai_total != 0 and human_total != 0:
+        precision = ai_true / (ai_true + (human_total - human_true))
+        recall = ai_true / ai_total
+        f1 = 2 * precision * recall / (precision + recall)
+
+    test_result = {
+        "method": method,
+        "dataset": test_dataset,
+        "dataset_path": test_dataset_path,
+        "human_true": human_true,
+        "human_total": human_total,
+        "human_true_rate": human_true_rate,
+        "ai_true": ai_true,
+        "ai_total": ai_total,
+        "ai_true_rate": ai_true_rate,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
+
+    end_time = time.time()
+    print("time to test {} seconds.".format(end_time - start_time))
+    return test_result
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--method', type=str, default='gltr', help='baseline method,')
     parser.add_argument('--test_dataset', type=str, default='hc3_english', help='test dataset')
-    parser.add_argument('--test_dataset_path', type=str, default='../data_collector/test_data/hc3_english', help='test dataset path')
+    parser.add_argument('--test_dataset_path', type=str, default='../data_collector/test_data/hc3_english',
+                        help='test dataset path')
     parser.add_argument('--test_data_nums', type=int, default=1000)
 
     args = parser.parse_args()
@@ -196,4 +264,4 @@ if __name__ == '__main__':
     # print(len(test_data_set['human']))
     # print(len(test_data_set['ai']))
 
-
+    print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
