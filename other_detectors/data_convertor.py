@@ -14,18 +14,18 @@ import os
 
 def convert_CHEAT_dataset(CHEAT_path):
     result = []
-    with open(CHEAT_path + "\\" + "ieee-chatgpt-fusion.jsonl", 'r', encoding='utf-8') as fusion_file:
+    with open(CHEAT_path + "/" + "ieee-chatgpt-fusion.jsonl", 'r', encoding='utf-8') as fusion_file:
         pass
-    with open(CHEAT_path + "\\" + "ieee-chatgpt-generation.jsonl", 'r', encoding='utf-8') as generation_file:
+    with open(CHEAT_path + "/" + "ieee-chatgpt-generation.jsonl", 'r', encoding='utf-8') as generation_file:
         for line in generation_file:
             json_obj = json.loads(line)
             result.append({
                 'content': json_obj['abstract'],
                 'label': 1
             })
-    with open(CHEAT_path + "\\" + "ieee-chatgpt-polish.jsonl", 'r', encoding='utf-8') as polish_file:
+    with open(CHEAT_path + "/" + "ieee-chatgpt-polish.jsonl", 'r', encoding='utf-8') as polish_file:
         pass
-    with open(CHEAT_path + "\\" + "ieee-init.jsonl", 'r', encoding='utf-8') as init_file:
+    with open(CHEAT_path + "/" + "ieee-init.jsonl", 'r', encoding='utf-8') as init_file:
         for line in init_file:
             json_obj = json.loads(line)
             result.append({
@@ -39,7 +39,7 @@ def convert_ghostbuster_dataset(ghostbuster_path):
     result = []
     for file in os.listdir(ghostbuster_path):
         if file.find('human') != -1:
-            with open(ghostbuster_path + '\\' + file, 'r', encoding='utf-8') as f:
+            with open(ghostbuster_path + '/' + file, 'r', encoding='utf-8') as f:
                 for line in f:
                     if len(line.replace('\n', '').strip()) == 0:
                         continue
@@ -48,7 +48,7 @@ def convert_ghostbuster_dataset(ghostbuster_path):
                         'label': 0
                     })
         else:
-            with open(ghostbuster_path + '\\' + file, 'r', encoding='utf-8') as f:
+            with open(ghostbuster_path + '/' + file, 'r', encoding='utf-8') as f:
                 for line in f:
                     if len(line.replace('\n', '').strip()) == 0:
                         continue
@@ -64,7 +64,7 @@ def convert_hc3_english(hc3_english_path):
     for file in os.listdir(hc3_english_path):
         if file.find('.jsonl') == -1:
             continue
-        with open(hc3_english_path + '\\' + file, 'r', encoding='utf-8') as f:
+        with open(hc3_english_path + '/' + file, 'r', encoding='utf-8') as f:
             for line in f:
                 json_obj = json.loads(line)
                 human_answer = json_obj['human_answers'][0].replace('\n', '')
@@ -82,14 +82,14 @@ def convert_hc3_english(hc3_english_path):
 
 def convert_hc3_plus_english(hc3_plus_english_path):
     result = []
-    with open(hc3_plus_english_path + '\\' + 'test_hc3_QA.jsonl', 'r', encoding='utf-8') as qa_test_file:
+    with open(hc3_plus_english_path + '/' + 'test_hc3_QA.jsonl', 'r', encoding='utf-8') as qa_test_file:
         for line in qa_test_file:
             json_obj = json.loads(line)
             result.append({
                 'content': json_obj['text'],
                 'label': json_obj['label']
             })
-    with open(hc3_plus_english_path + '\\' + 'test_hc3_si.jsonl', 'r', encoding='utf-8') as si_test_file:
+    with open(hc3_plus_english_path + '/' + 'test_hc3_si.jsonl', 'r', encoding='utf-8') as si_test_file:
         for line in si_test_file:
             json_obj = json.loads(line)
             result.append({
@@ -106,8 +106,7 @@ def convert_m4(m4_path):
             continue
         if file.find('bloomz') != -1:
             continue
-        with open(m4_path + '\\' + file, 'r', encoding='utf-8') as f:
-            print(file)
+        with open(m4_path + '/' + file, 'r', encoding='utf-8') as f:
             for line in f:
                 try:
                     json_obj = json.loads(line)
