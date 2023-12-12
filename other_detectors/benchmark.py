@@ -1,6 +1,8 @@
 # 各个算法比较
 
 import argparse
+import csv
+import datetime
 import random
 import time
 from functools import partial
@@ -189,13 +191,21 @@ def test_classifier_and_dataset(classifier, data_set):
         content = data['content']
         label = data['label']
         if label == 0:
-            human_total += 1
-            if classifier(content):
-                human_true += 1
+            try:
+                if classifier(content):
+                    human_true += 1
+                human_total += 1
+            except Exception as e:
+                print(e)
+                print(content)
         elif label == 1:
-            ai_total += 1
-            if not classifier(content):
-                ai_true += 1
+            try:
+                if not classifier(content):
+                    ai_true += 1
+                ai_total += 1
+            except Exception as e:
+                print(e)
+                print(content)
 
     if human_total != 0:
         human_true_rate = human_true / human_total
@@ -233,6 +243,7 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
     multi_test_result = test_classifier_and_datasets(classifier, data_sets)
     for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
         multi_test_result[i]['dataset'] = test_datasets[i]
+        multi_test_result[i]['method'] = method
         multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
     return multi_test_result
 
@@ -242,6 +253,21 @@ def test_classifier_and_datasets(classifier, data_sets):
     for data_set in data_sets:
         result.append(test_classifier_and_dataset(classifier, data_set))
     return result
+
+
+def output_test_result_table(results, output_file_name='output_result' + str(datetime.datetime.now()) + '.csv'):
+    if isinstance(results, list):
+        pass
+    else:
+        results = [results]
+    with open(output_file_name, 'w', encoding='utf-8') as output_file:
+        fieldnames = results[0].keys()
+        writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+        # 写入标题行
+        writer.writeheader()
+        # 写入数据行
+        writer.writerows(results)
+
 
 
 if __name__ == '__main__':
@@ -293,5 +319,5 @@ if __name__ == '__main__':
     # print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
 
     # test multi test
-    print(multi_test(args.method, args.test_dataset.split(','), args.test_dataset_path.split(','), args.test_data_nums))
+    output_test_result_table(multi_test(args.method, args.test_dataset.split(','), args.test_dataset_path.split(','), args.test_data_nums))
     # python3 benchmark.py --test_data_nums 10 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
