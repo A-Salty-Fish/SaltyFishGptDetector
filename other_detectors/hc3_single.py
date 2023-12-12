@@ -15,7 +15,11 @@ def init_classifier():
 
 
 def classify_is_human(classfier, text, bar=0.50000):
-    res_0 = classfier(text)[0]
+    try:
+        res_0 = classfier(text)[0]
+    except Exception as e:
+        print(e)
+        res_0 = classfier(text[0:512])[0]
     if res_0['label'] == 'ChatGPT':
         return res_0['score'] < bar
     else:

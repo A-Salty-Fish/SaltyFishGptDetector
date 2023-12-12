@@ -164,6 +164,14 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True)
 def simple_test(method, test_dataset, test_dataset_path, test_data_nums):
     classifier = get_classifier(method)
     data_set = get_test_data(test_dataset, test_dataset_path, test_data_nums)
+    test_result = test_classifier_and_dataset(classifier, data_set)
+    test_result['method'] = method
+    test_result['dataset'] = test_dataset
+    test_result['dataset_path'] = test_dataset_path
+    return test_result
+
+
+def test_classifier_and_dataset(classifier, data_set):
     print("test begin")
     start_time = time.time()
 
@@ -200,9 +208,6 @@ def simple_test(method, test_dataset, test_dataset_path, test_data_nums):
         f1 = 2 * precision * recall / (precision + recall)
 
     test_result = {
-        "method": method,
-        "dataset": test_dataset,
-        "dataset_path": test_dataset_path,
         "human_true": human_true,
         "human_total": human_total,
         "human_true_rate": human_true_rate,
@@ -264,4 +269,5 @@ if __name__ == '__main__':
     # print(len(test_data_set['human']))
     # print(len(test_data_set['ai']))
 
+    # test simple test
     print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
