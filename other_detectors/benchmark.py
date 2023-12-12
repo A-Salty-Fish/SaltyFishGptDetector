@@ -4,6 +4,7 @@ import argparse
 import time
 from functools import partial
 
+import data_convertor
 import detect_gpt
 import gltr
 import hc3_ling
@@ -116,11 +117,48 @@ def get_classifier(method):
 
     return classifier
 
+
+def get_test_data(test_dataset, test_dataset_path, test_data_nums):
+    start_time = time.time()
+    result = {
+        'human': [],
+        'ai': []
+    }
+
+    tmp_result = []
+
+    if test_dataset == 'CHEAT':
+        tmp_result = data_convertor.convert_CHEAT_dataset(test_dataset_path)
+    if test_dataset == 'ghostbuster':
+        tmp_result = data_convertor.convert_ghostbuster_dataset(test_dataset_path)
+    if test_dataset == 'hc3_english':
+        tmp_result = data_convertor.convert_hc3_english(test_dataset_path)
+    if test_dataset == 'hc3_plus_english':
+        tmp_result = data_convertor.convert_hc3_plus_english(test_dataset_path)
+    if test_dataset == 'm4':
+        tmp_result = data_convertor.convert_m4(test_dataset_path)
+
+    result['human'] = [x for x in tmp_result if x['label'] == 0]
+    result['ai'] = [x for x in tmp_result if x['label'] == 0]
+
+    result['human'] = result['human'][0: min(test_data_nums, len(result['human']))]
+    result['ai'] = result['ai'][0: min(test_data_nums, len(result['ai']))]
+
+    end_time = time.time()
+    print("time to load test dataset was {} seconds.".format(end_time - start_time))
+
+    if len(result['human']) == 0 and len(result['ai']) == 0:
+        raise ValueError("load test data error: no data, please check the path:" + test_dataset_path)
+
+    return result
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--method', type=str, default='gltr', help='baseline method,')
     parser.add_argument('--test_dataset', type=str, default='hc3_english', help='test dataset')
+    parser.add_argument('--test_dataset_path', type=str, default='../data_collector/test_data/hc3_english', help='test dataset path')
     parser.add_argument('--test_data_nums', type=int, default=1000)
 
     args = parser.parse_args()
@@ -129,10 +167,33 @@ if __name__ == '__main__':
         raise ValueError('method not supported')
     if args.test_dataset not in support_datasets:
         raise ValueError('test dataset not supported')
+    if args.test_data_nums <= 0:
+        raise ValueError('test nums must > 0')
 
-    classify = get_classifier(args.method)
-    sentence = "DetectGPT is an amazing method to determine whether a piece of text is written by large language models (like ChatGPT, GPT3, GPT2, BLOOM etc). However, we couldn't find any open-source implementation of it. Therefore this is the implementation of the paper."
-    print(classify(sentence))
+    # test load classifier
+    # classify = get_classifier(args.method)
+    # sentence = "DetectGPT is an amazing method to determine whether a piece of text is written by large language models (like ChatGPT, GPT3, GPT2, BLOOM etc). However, we couldn't find any open-source implementation of it. Therefore this is the implementation of the paper."
+    # print(classify(sentence))
 
+    # test load data set
+    # test_data_set = get_test_data('CHEAT', '../data_collector/test_data/CHEAT', args.test_data_nums)
+    # print(len(test_data_set['human']))
+    # print(len(test_data_set['ai']))
+    #
+    # test_data_set = get_test_data('m4', '../data_collector/test_data/m4', args.test_data_nums)
+    # print(len(test_data_set['human']))
+    # print(len(test_data_set['ai']))
+    #
+    # test_data_set = get_test_data('ghostbuster', '../data_collector/test_data/ghostbuster', args.test_data_nums)
+    # print(len(test_data_set['human']))
+    # print(len(test_data_set['ai']))
+    #
+    # test_data_set = get_test_data('hc3_english', '../data_collector/test_data/hc3_english', args.test_data_nums)
+    # print(len(test_data_set['human']))
+    # print(len(test_data_set['ai']))
+    #
+    # test_data_set = get_test_data('hc3_plus_english', '../data_collector/test_data/hc3_plus_english', args.test_data_nums)
+    # print(len(test_data_set['human']))
+    # print(len(test_data_set['ai']))
 
 
