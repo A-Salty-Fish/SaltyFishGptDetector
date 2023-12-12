@@ -217,6 +217,9 @@ def test_classifier_and_dataset(classifier, data_set):
         recall = ai_true / ai_total
         f1 = 2 * precision * recall / (precision + recall)
 
+    end_time = time.time()
+    print("time to test {} seconds.".format(end_time - start_time))
+
     test_result = {
         "human_true": human_true,
         "human_total": human_total,
@@ -226,11 +229,10 @@ def test_classifier_and_dataset(classifier, data_set):
         "ai_true_rate": ai_true_rate,
         "precision": precision,
         "recall": recall,
-        "f1": f1
+        "f1": f1,
+        "run_seconds": end_time - start_time
     }
 
-    end_time = time.time()
-    print("time to test {} seconds.".format(end_time - start_time))
     return test_result
 
 
@@ -319,5 +321,9 @@ if __name__ == '__main__':
     # print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
 
     # test multi test
-    output_test_result_table(multi_test(args.method, args.test_dataset.split(','), args.test_dataset_path.split(','), args.test_data_nums))
-    # python3 benchmark.py --test_data_nums 10 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
+    # output_test_result_table(multi_test(args.method, args.test_dataset.split(','), args.test_dataset_path.split(','), args.test_data_nums), output_file_name=args.method + '_output_result' + str(datetime.datetime.now()) + '.csv')
+    # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
+    # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
+
+    for method in support_methods:
+        output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','), '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(','), 100))
