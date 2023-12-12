@@ -192,7 +192,7 @@ def detect(text):
     return test_result
 
 
-load_probability()
+# load_probability()
 
 text = "The actress was honoured for her role in 'The Reader' at the annual ceremony, which was held at the Royal Albert Hall. The film, which is based on the novel by the same name by Philip Roth, tells the story of a New York Times reporter who returns to his hometown to cover the death of his brother-in-law. Winslet plays his wife, with whom he has been divided since the death of their son.\nIn the film, Winslet plays the mother of the grieving brother-in-law.\nThe actress also won a Golden Globe for her role in the film at the ceremony in November.\nWinslet was also nominated for an Oscar for her role in 'The Reader'.\nThe 63-year-old Winslet was seen accepting her awards at the ceremony, where she was joined by her husband, John Krasinski, who has been nominated for best supporting actor in the film.\nWinslet and Krasinski met while"
 
