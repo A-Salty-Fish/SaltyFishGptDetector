@@ -224,6 +224,25 @@ def test_classifier_and_dataset(classifier, data_set):
     return test_result
 
 
+def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
+    classifier = get_classifier(method)
+    data_sets = []
+    for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
+        data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums)
+        data_sets.append(data_set)
+    multi_test_result = test_classifier_and_datasets(classifier, data_sets)
+    for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
+        multi_test_result[i]['dataset'] = test_datasets[i]
+        multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
+    return multi_test_result
+
+
+def test_classifier_and_datasets(classifier, data_sets):
+    result = []
+    for data_set in data_sets:
+        result.append(test_classifier_and_dataset(classifier, data_set))
+    return result
+
 
 if __name__ == '__main__':
 
@@ -238,8 +257,9 @@ if __name__ == '__main__':
 
     if args.method not in support_methods:
         raise ValueError('method not supported')
-    if args.test_dataset not in support_datasets:
-        raise ValueError('test dataset not supported')
+    for td in args.test_dataset.split(','):
+        if td not in support_datasets:
+            raise ValueError('test dataset not supported:' + td)
     if args.test_data_nums <= 0:
         raise ValueError('test nums must > 0')
 
@@ -270,4 +290,8 @@ if __name__ == '__main__':
     # print(len(test_data_set['ai']))
 
     # test simple test
-    print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
+    # print(simple_test(args.method, args.test_dataset, args.test_dataset_path, args.test_data_nums))
+
+    # test multi test
+    print(multi_test(args.method, args.test_dataset.split(','), args.test_dataset_path.split(','), args.test_data_nums))
+    # python3 benchmark.py --test_data_nums 10 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
