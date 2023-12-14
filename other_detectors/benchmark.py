@@ -129,13 +129,13 @@ def get_classifier(method):
             except Exception as e:
                 print(e)
                 print(text)
-                return False
+                return True
         try:
             return classifier(text)
         except Exception as e:
             print(e)
             print(text)
-            return out_classifier(text[0: len(text) * 3 / 4], retry_times - 1)
+            return out_classifier(text[0: int(len(text) * 3 / 4)], retry_times - 1)
 
     return out_classifier
 
@@ -269,6 +269,8 @@ def test_classifier_and_dataset(classifier, data_set):
         "run_seconds": end_time - start_time
     }
 
+    print(test_result)
+
     return test_result
 
 
@@ -293,7 +295,7 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
     #     multi_test_result[i]['method'] = method
     #     multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
     print("method test end:" + method)
-    end_time = time.time()
+    end_time = datetime.datetime.now()
     print(str(method) + " time to test {} seconds.".format(end_time - start_time))
     return multi_test_result
 
