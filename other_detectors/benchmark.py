@@ -146,6 +146,7 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True)
     result['human'] = [x for x in tmp_result if x['label'] == 0]
     result['ai'] = [x for x in tmp_result if x['label'] == 1]
 
+    # 打乱数据
     if shuffle:
         random.shuffle(result['human'])
         random.shuffle(result['ai'])
@@ -153,6 +154,16 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True)
 
     result['human'] = result['human'][0: min(test_data_nums, len(result['human']))]
     result['ai'] = result['ai'][0: min(test_data_nums, len(result['ai']))]
+
+    # 截断过长的数据
+    for i in range(0, len(result['human'])):
+        words = result['human'][i]['content'].split(' ')
+        if len(words) > 500:
+            result['human'][i]['content'] = " ".join(words[0: 500])
+    for i in range(0, len(result['ai'])):
+        words = result['ai'][i]['content'].split(' ')
+        if len(words) > 500:
+            result['ai'][i]['content'] = " ".join(words[0: 500])
 
     end_time = time.time()
     print("time to load test dataset was {} seconds.".format(end_time - start_time))
