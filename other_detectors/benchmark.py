@@ -213,9 +213,11 @@ def test_classifier_and_dataset(classifier, data_set):
         ai_true_rate = ai_true / ai_total
 
     if ai_total != 0 and human_total != 0:
-        precision = ai_true / (ai_true + (human_total - human_true))
+        if (ai_true + (human_total - human_true)) != 0:
+            precision = ai_true / (ai_true + (human_total - human_true))
         recall = ai_true / ai_total
-        f1 = 2 * precision * recall / (precision + recall)
+        if (precision + recall) != 0:
+            f1 = 2 * precision * recall / (precision + recall)
 
     end_time = time.time()
     print("time to test {} seconds.".format(end_time - start_time))
