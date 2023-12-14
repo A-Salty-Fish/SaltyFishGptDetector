@@ -18,7 +18,7 @@ import openai_roberta_large
 import radar_vicuna
 
 support_methods = [
-    'detect_gpt',
+    # 'detect_gpt',
     'gltr',
     'hc3_ling',
     'hc3_single',
@@ -117,8 +117,22 @@ def get_classifier(method):
 
     end_time = time.time()
     print("time to init model and classifier was {} seconds.".format(end_time - start_time))
-    if classifier == None:
+
+    if classifier is None:
         print("None Method")
+        return None
+
+    def out_classifier(text: str, retry_times=3):
+        if retry_times == 0:
+            try:
+                return classifier(text[0: 500])
+            except Exception as e:
+                print(e)
+                return False
+        try:
+            return classifier(text)
+        except Exception as e:
+            return out_classifier(text[0: len(text) * 3 / 4], retry_times - 1)
 
     return classifier
 
@@ -200,9 +214,10 @@ def test_classifier_and_dataset(classifier, data_set):
     for data in data_set['human'] + data_set['ai']:
         content = data['content']
         label = data['label']
+        pred_label = classifier(content)
         if label == 0:
             try:
-                if classifier(content):
+                if pred_label:
                     human_true += 1
                 human_total += 1
             except Exception as e:
@@ -210,12 +225,13 @@ def test_classifier_and_dataset(classifier, data_set):
                 print(content)
         elif label == 1:
             try:
-                if not classifier(content):
+                if not pred_label:
                     ai_true += 1
                 ai_total += 1
             except Exception as e:
                 print(e)
                 print(content)
+        print(pred_label)
 
     if human_total != 0:
         human_true_rate = human_true / human_total
@@ -342,5 +358,10 @@ if __name__ == '__main__':
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
 
-    for method in support_methods:
-        output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','), '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(','), 100))
+
+    # for method in support_methods:
+        # output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','), '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(','), 100))
+
+    output_test_result_table(multi_test('gltr', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+                                        '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+                                            ','), 100))
