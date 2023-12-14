@@ -185,7 +185,6 @@ def simple_test(method, test_dataset, test_dataset_path, test_data_nums):
 
 
 def test_classifier_and_dataset(classifier, data_set):
-    print("test begin")
     start_time = time.time()
 
     human_true = 0
@@ -250,6 +249,8 @@ def test_classifier_and_dataset(classifier, data_set):
 
 
 def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
+    print("method test begin:" + method)
+    start_time = datetime.datetime.now()
     classifier = get_classifier(method)
     data_sets = []
     for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
@@ -260,6 +261,9 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
         multi_test_result[i]['dataset'] = test_datasets[i]
         multi_test_result[i]['method'] = method
         multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
+    print("method test end:" + method)
+    end_time = time.time()
+    print(str(method) + " time to test {} seconds.".format(end_time - start_time))
     return multi_test_result
 
 
