@@ -128,13 +128,16 @@ def get_classifier(method):
                 return classifier(text[0: 500])
             except Exception as e:
                 print(e)
+                print(text)
                 return False
         try:
             return classifier(text)
         except Exception as e:
+            print(e)
+            print(text)
             return out_classifier(text[0: len(text) * 3 / 4], retry_times - 1)
 
-    return classifier
+    return out_classifier
 
 
 def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True):
@@ -211,7 +214,10 @@ def test_classifier_and_dataset(classifier, data_set):
     recall = 0.0
     f1 = 0
 
-    for data in data_set['human'] + data_set['ai']:
+    all_data = data_set['human'] + data_set['ai']
+    i = 0
+    for data in all_data:
+        i += 1
         content = data['content']
         label = data['label']
         pred_label = classifier(content)
@@ -231,7 +237,9 @@ def test_classifier_and_dataset(classifier, data_set):
             except Exception as e:
                 print(e)
                 print(content)
-        print(pred_label)
+        percent = round(1.0 * (i + 1) / len(all_data) * 100, 2)
+        print('test process : %s [%d/%d]'%(str(percent)+'%', i + 1,len(all_data)),end='\r')
+    print("test process end", end='\n')
 
     if human_total != 0:
         human_true_rate = human_true / human_total
@@ -269,14 +277,21 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
     start_time = datetime.datetime.now()
     classifier = get_classifier(method)
     data_sets = []
+    multi_test_result = []
     for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
+        print("begin test dataset: " + test_datasets[i])
         data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums)
         data_sets.append(data_set)
-    multi_test_result = test_classifier_and_datasets(classifier, data_sets)
-    for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
+        multi_test_result.append(test_classifier_and_dataset(classifier, data_set))
         multi_test_result[i]['dataset'] = test_datasets[i]
         multi_test_result[i]['method'] = method
         multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
+        print("end test dataset: " + test_datasets[i])
+        print(f"finished: {i+1},  remained: {min(len(test_datasets), len(test_dataset_paths)) - i}")
+    # for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
+    #     multi_test_result[i]['dataset'] = test_datasets[i]
+    #     multi_test_result[i]['method'] = method
+    #     multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
     print("method test end:" + method)
     end_time = time.time()
     print(str(method) + " time to test {} seconds.".format(end_time - start_time))
