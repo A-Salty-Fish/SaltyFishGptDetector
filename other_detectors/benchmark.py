@@ -18,7 +18,6 @@ import openai_roberta_large
 import radar_vicuna
 
 support_methods = [
-    # 'detect_gpt',
     'gltr',
     'hc3_ling',
     'hc3_single',
@@ -26,7 +25,8 @@ support_methods = [
     'llmdet',
     'openai-roberta-base',
     'openai-roberta-large',
-    'radar-vicuna'
+    'radar-vicuna',
+    'detect_gpt',
 ]
 
 support_datasets = [
@@ -140,7 +140,7 @@ def get_classifier(method):
     return out_classifier
 
 
-def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True):
+def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False):
     start_time = time.time()
     result = {
         'human': [],
@@ -167,7 +167,6 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=True)
     if shuffle:
         random.shuffle(result['human'])
         random.shuffle(result['ai'])
-
 
     result['human'] = result['human'][0: min(test_data_nums, len(result['human']))]
     result['ai'] = result['ai'][0: min(test_data_nums, len(result['ai']))]
@@ -238,7 +237,7 @@ def test_classifier_and_dataset(classifier, data_set):
                 print(e)
                 print(content)
         percent = round(1.0 * (i + 1) / len(all_data) * 100, 2)
-        print('test process : %s [%d/%d]'%(str(percent)+'%', i + 1,len(all_data)),end='\r')
+        print('test process : %s [%d/%d]' % (str(percent) + '%', i + 1, len(all_data)), end='\r')
     print("test process end", end='\n')
 
     if human_total != 0:
@@ -289,7 +288,7 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
         multi_test_result[i]['method'] = method
         multi_test_result[i]['dataset_path'] = test_dataset_paths[i]
         print("end test dataset: " + test_datasets[i])
-        print(f"finished: {i+1},  remained: {min(len(test_datasets), len(test_dataset_paths)) - i}")
+        print(f"finished: {i + 1},  remained: {min(len(test_datasets), len(test_dataset_paths)) - i}")
     # for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
     #     multi_test_result[i]['dataset'] = test_datasets[i]
     #     multi_test_result[i]['method'] = method
@@ -307,7 +306,9 @@ def test_classifier_and_datasets(classifier, data_sets):
     return result
 
 
-def output_test_result_table(results, output_file_name='output_result' + str(datetime.datetime.now()) + '.csv'):
+def output_test_result_table(results, output_file_name=None):
+    if output_file_name is None:
+        output_file_name = 'output_result' + str(datetime.datetime.now()) + '.csv'
     if isinstance(results, list):
         pass
     else:
@@ -319,7 +320,6 @@ def output_test_result_table(results, output_file_name='output_result' + str(dat
         writer.writeheader()
         # 写入数据行
         writer.writerows(results)
-
 
 
 if __name__ == '__main__':
@@ -375,10 +375,15 @@ if __name__ == '__main__':
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
 
+    for method in support_methods:
+        output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+                                            '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+                                                ','), 1000))
 
-    # for method in support_methods:
-        # output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','), '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(','), 100))
+    # output_test_result_table(multi_test('gltr', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+    #                                         ','), 100))
 
-    output_test_result_table(multi_test('gltr', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
-                                        '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
-                                            ','), 100))
+    # output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+    #                                         ','), 1000))
