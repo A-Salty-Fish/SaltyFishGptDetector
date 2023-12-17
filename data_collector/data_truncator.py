@@ -37,6 +37,46 @@ def truncate_CHEAT(raw_cheat_path, truncated_cheat_path, truncate_length=256, dr
                     json_obj['abstract'] = truncated_sentence
                     init_out_file.write(json.dumps(json_obj) + '\n')
 
+
+
+def truncate_ghostbuster(raw_ghostbuster_path, truncated_ghostbuster_path, truncate_length=256, drop_length = 128):
+    essay_claude_file_name = 'essay_claude.txt'
+    essay_gpt_file_name = 'essay_gpt.txt'
+    essay_gpt_semantic_file_name = 'essay_gpt_semantic.txt'
+    essay_gpt_writing_file_name = 'essay_gpt_writing.txt'
+    essay_human_file_name = 'essay_human.txt'
+    with open(raw_ghostbuster_path + essay_claude_file_name, 'r', encoding='utf-8') as essay_claude_file, open(
+        raw_ghostbuster_path + essay_gpt_file_name, 'r', encoding='utf-8') as essay_gpt_file, open(
+        raw_ghostbuster_path + essay_gpt_semantic_file_name, 'r', encoding='utf-8') as essay_gpt_semantic_file, open(
+        raw_ghostbuster_path + essay_gpt_writing_file_name, 'r', encoding='utf-8') as essay_gpt_writing_file, open(
+        raw_ghostbuster_path + essay_human_file_name, 'r', encoding='utf-8') as essay_human_file:
+            with open(truncated_ghostbuster_path + essay_claude_file_name, 'w', encoding='utf-8') as essay_claude_out_file:
+                for line in essay_claude_file:
+                    truncated_sentences = truncate_content(content=line, truncate_length=truncate_length, drop_length=drop_length)
+                    for truncated_sentence in truncated_sentences:
+                        essay_claude_out_file.write(truncated_sentence.replace('\n','') + '\n')
+            with open(truncated_ghostbuster_path + essay_gpt_file_name, 'w', encoding='utf-8') as essay_gpt_out_file:
+                for line in essay_gpt_file:
+                    truncated_sentences = truncate_content(content=line, truncate_length=truncate_length, drop_length=drop_length)
+                    for truncated_sentence in truncated_sentences:
+                        essay_gpt_out_file.write(truncated_sentence.replace('\n','') + '\n')
+            with open(truncated_ghostbuster_path + essay_gpt_semantic_file_name, 'w', encoding='utf-8') as essay_gpt_semantic_out_file:
+                for line in essay_gpt_semantic_file:
+                    truncated_sentences = truncate_content(content=line, truncate_length=truncate_length, drop_length=drop_length)
+                    for truncated_sentence in truncated_sentences:
+                        essay_gpt_semantic_out_file.write(truncated_sentence.replace('\n','') + '\n')
+            with open(truncated_ghostbuster_path + essay_gpt_writing_file_name, 'w', encoding='utf-8') as essay_gpt_writing_out_file:
+                for line in essay_gpt_writing_file:
+                    truncated_sentences = truncate_content(content=line, truncate_length=truncate_length, drop_length=drop_length)
+                    for truncated_sentence in truncated_sentences:
+                        essay_gpt_writing_out_file.write(truncated_sentence.replace('\n','') + '\n')
+            with open(truncated_ghostbuster_path + essay_human_file_name, 'w', encoding='utf-8') as essay_human_out_file:
+                for line in essay_human_file:
+                    truncated_sentences = truncate_content(content=line, truncate_length=truncate_length, drop_length=drop_length)
+                    for truncated_sentence in truncated_sentences:
+                        essay_human_out_file.write(truncated_sentence.replace('\n','') + '\n')
+
+
 def truncate_content(content: str, truncate_length, drop_length):
     words = content.split(' ')
     truncated_sentences = []
@@ -53,4 +93,5 @@ def truncate_content(content: str, truncate_length, drop_length):
 
 
 if __name__ == '__main__':
-    truncate_CHEAT('./test_data/CHEAT/', './test_data_truncated/CHEAT/')
+    # truncate_CHEAT('./test_data/CHEAT/', './test_data_truncated/CHEAT/')
+    truncate_ghostbuster('./test_data/ghostbuster/', './test_data_truncated/ghostbuster/')
