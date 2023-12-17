@@ -77,6 +77,64 @@ def truncate_ghostbuster(raw_ghostbuster_path, truncated_ghostbuster_path, trunc
                         essay_human_out_file.write(truncated_sentence.replace('\n','') + '\n')
 
 
+def truncate_hc3_english(raw_hc3_english_path, truncated_hc3_english_path, truncate_length=256, drop_length = 128):
+    finance_file_name = 'finance.jsonl'
+    medicine_file_name = 'medicine.jsonl'
+    open_qa_file_name = 'open_qa.jsonl'
+    wiki_csai_file_name = 'wiki_csai.jsonl'
+    with open(raw_hc3_english_path + finance_file_name, 'r', encoding='utf-8') as finance_file, open(
+            raw_hc3_english_path + medicine_file_name, 'r', encoding='utf-8') as medicine_file, open(
+            raw_hc3_english_path + open_qa_file_name, 'r', encoding='utf-8') as open_qa_file, open(
+            raw_hc3_english_path + wiki_csai_file_name, 'r', encoding='utf-8') as wiki_csai_file:
+        with open(truncated_hc3_english_path + finance_file_name, 'w', encoding='utf-8') as finance_out_file:
+            for line in finance_file:
+                json_obj = json.loads(line)
+                human_truncated_sentences = truncate_content(content=json_obj['human_answers'][0],
+                                                             truncate_length=truncate_length,
+                                                             drop_length=drop_length)
+                json_obj['human_answers'] = human_truncated_sentences
+                chatgpt_truncated_sentences = truncate_content(content=json_obj['chatgpt_answers'][0],
+                                                               truncate_length=truncate_length,
+                                                               drop_length=drop_length)
+                json_obj['chatgpt_answers'] = chatgpt_truncated_sentences
+                finance_out_file.write(json.dumps(json_obj) + '\n')
+        with open(truncated_hc3_english_path + medicine_file_name, 'w', encoding='utf-8') as medicine_out_file:
+            for line in medicine_file:
+                json_obj = json.loads(line)
+                human_truncated_sentences = truncate_content(content=json_obj['human_answers'][0],
+                                                             truncate_length=truncate_length,
+                                                             drop_length=drop_length)
+                json_obj['human_answers'] = human_truncated_sentences
+                chatgpt_truncated_sentences = truncate_content(content=json_obj['chatgpt_answers'][0],
+                                                               truncate_length=truncate_length,
+                                                               drop_length=drop_length)
+                json_obj['chatgpt_answers'] = chatgpt_truncated_sentences
+                medicine_out_file.write(json.dumps(json_obj) + '\n')
+        with open(truncated_hc3_english_path + open_qa_file_name, 'w', encoding='utf-8') as open_qa_out_file:
+            for line in open_qa_file:
+                json_obj = json.loads(line)
+                human_truncated_sentences = truncate_content(content=json_obj['human_answers'][0],
+                                                             truncate_length=truncate_length,
+                                                             drop_length=drop_length)
+                json_obj['human_answers'] = human_truncated_sentences
+                chatgpt_truncated_sentences = truncate_content(content=json_obj['chatgpt_answers'][0],
+                                                               truncate_length=truncate_length,
+                                                               drop_length=drop_length)
+                json_obj['chatgpt_answers'] = chatgpt_truncated_sentences
+                open_qa_out_file.write(json.dumps(json_obj) + '\n')
+        with open(truncated_hc3_english_path + wiki_csai_file_name, 'w', encoding='utf-8') as wiki_csai_out_file:
+            for line in wiki_csai_file:
+                json_obj = json.loads(line)
+                human_truncated_sentences = truncate_content(content=json_obj['human_answers'][0],
+                                                             truncate_length=truncate_length,
+                                                             drop_length=drop_length)
+                json_obj['human_answers'] = human_truncated_sentences
+                chatgpt_truncated_sentences = truncate_content(content=json_obj['chatgpt_answers'][0],
+                                                               truncate_length=truncate_length,
+                                                               drop_length=drop_length)
+                json_obj['chatgpt_answers'] = chatgpt_truncated_sentences
+                wiki_csai_out_file.write(json.dumps(json_obj) + '\n')
+
 def truncate_content(content: str, truncate_length, drop_length):
     words = content.split(' ')
     truncated_sentences = []
@@ -94,4 +152,6 @@ def truncate_content(content: str, truncate_length, drop_length):
 
 if __name__ == '__main__':
     # truncate_CHEAT('./test_data/CHEAT/', './test_data_truncated/CHEAT/')
-    truncate_ghostbuster('./test_data/ghostbuster/', './test_data_truncated/ghostbuster/')
+    # truncate_ghostbuster('./test_data/ghostbuster/', './test_data_truncated/ghostbuster/')
+    # truncate_hc3_english('./test_data/hc3_english/', './test_data_truncated/hc3_english/')
+    pass
