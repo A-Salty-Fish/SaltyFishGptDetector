@@ -56,7 +56,9 @@ def convert_pdf_to_txt(pdf_id):
 
 def download_by_category(categories, nums):
     i = 0
-    num_files = len(os.listdir('./row_data/arxiv_pdf/')) + 10
+    print("开始扫描文件夹")
+    num_files = len(os.listdir('./row_data/arxiv_pdf/')) + 30
+    print("结束扫描文件夹")
     with open('./row_data/arxiv-metadata-oai-snapshot.json', 'r') as input_file:
         for line in input_file:
             json_obj = json.loads(line)
@@ -92,7 +94,7 @@ if __name__ == '__main__':
     # print(num_files)
     while True:
         try:
-            download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 10000)
+            download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 25000)
         except Exception as e:
             print(e)
             time.sleep(5)
