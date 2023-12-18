@@ -1,6 +1,6 @@
 # 代码地址：https://github.com/HendrikStrobelt/detecting-fake-text
 
-#encoding=utf-8
+# encoding=utf-8
 
 import numpy as np
 import torch
@@ -368,13 +368,13 @@ def main():
     print("SAMPLE:", sample)
 
 
-def classify_is_human(lm, text, token_bar = 0.5000, rank_bar = 5):
+def classify_is_human(lm, text, token_bar=0.5000, rank_bar=5):
     real_topk = lm.check_probabilities(text, topk=5)['real_topk']
     predic_num = 0
     for rt in real_topk:
         if rt[0] <= rank_bar:
-            predic_num+=1
-    if 1.0*(predic_num)/len(real_topk) > token_bar:
+            predic_num += 1
+    if 1.0 * (predic_num) / len(real_topk) > token_bar:
         return False
     else:
         return True

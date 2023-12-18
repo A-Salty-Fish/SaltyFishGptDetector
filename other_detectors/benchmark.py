@@ -55,7 +55,7 @@ def get_classifier(method):
         model = gltr.LM()
 
         def classify(text):
-            return gltr.classify_is_human(model, text=text)
+            return gltr.classify_is_human(model, text=text, token_bar=0.6500)
 
         classifier = classify
 
@@ -236,8 +236,8 @@ def test_classifier_and_dataset(classifier, data_set):
             except Exception as e:
                 print(e)
                 print(content)
-        percent = round(1.0 * (i + 1) / len(all_data) * 100, 2)
-        print('test process : %s [%d/%d]' % (str(percent) + '%', i + 1, len(all_data)), end='\r')
+        percent = round(1.0 * (i) / len(all_data) * 100, 2)
+        print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
     print("test process end", end='\n')
 
     if human_total != 0:
@@ -375,14 +375,19 @@ if __name__ == '__main__':
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
     # python3 benchmark.py --test_data_nums 1000 --method hc3_single --test_dataset CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english --test_dataset_path ../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english
 
-    for method in support_methods:
-        output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
-                                            '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
-                                                ','), 1000))
+    # for method in support_methods:
+    #     output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    #                                         '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+    #                                             ','), 1000))
+
 
     # output_test_result_table(multi_test('gltr', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 100))
+
+    output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+                                        '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+                                            ','), 100))
 
     # output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
