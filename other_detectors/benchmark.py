@@ -84,10 +84,10 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'llmdet':
-        model = llmdet.load_probability()
+        model = llmdet.init_models()
 
         def classify(text):
-            return llmdet.classify_is_human(text=text)
+            return llmdet.classify_is_human(model, text=text)
 
         classifier = classify
 
@@ -385,7 +385,7 @@ if __name__ == '__main__':
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 100))
 
-    output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    output_test_result_table(multi_test('llmdet', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
                                         '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
                                             ','), 100))
 
