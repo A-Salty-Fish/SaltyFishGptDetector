@@ -385,7 +385,7 @@ if __name__ == '__main__':
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 100))
 
-    output_test_result_table(multi_test('openai-roberta-large', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    output_test_result_table(multi_test('detect_gpt', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
                                         '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
                                             ','), 100))
 
