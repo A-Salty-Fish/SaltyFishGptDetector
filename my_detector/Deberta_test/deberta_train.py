@@ -7,12 +7,13 @@ from transformers import Trainer, TrainingArguments
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
 
+
 def init_model_and_tokenizer():
     start_time = time.time()
     # tokenizer = AutoTokenizer.from_pretrained("../Erlangshen-DeBERTa-v2-710M-Chinese", model_max_length=256)
     # model = AutoModelForSequenceClassification.from_pretrained("../Erlangshen-DeBERTa-v2-710M-Chinese", num_labels=2)
-    tokenizer=AutoTokenizer.from_pretrained('microsoft/deberta-v3-small', model_max_length=512)
-    model= AutoModelForSequenceClassification.from_pretrained('microsoft/deberta-v3-small')
+    tokenizer = AutoTokenizer.from_pretrained('microsoft/deberta-v3-small', model_max_length=512)
+    model = AutoModelForSequenceClassification.from_pretrained('microsoft/deberta-v3-small')
 
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(DEVICE)
@@ -21,6 +22,7 @@ def init_model_and_tokenizer():
     end_time = time.time()
     print("load model successful: " + str(end_time - start_time))
     return model, tokenizer
+
 
 def load_local_dataset(name):
     start_time = time.time()
@@ -32,6 +34,8 @@ def load_local_dataset(name):
     end_time = time.time()
     print("load dataset successful: " + str(end_time - start_time))
     return local_dataset
+
+
 #
 # local_dataset['validation'] = local_dataset['train'][int(len(local_dataset) * 9 / 10):]
 # local_dataset['train'] = local_dataset['train'][0: int(len(local_dataset) * 9 / 10)]
@@ -39,8 +43,10 @@ def load_local_dataset(name):
 
 def tokenize_data(tokenizer, local_dataset):
     start_time = time.time()
+
     def tokenize(batch):
         return tokenizer(batch["content"], padding=True, truncation=True)
+
     tokenized_data = local_dataset.map(tokenize, batched=True, batch_size=None)
     tokenized_data.set_format("torch", columns=["input_ids", "attention_mask", "label"])
 
@@ -57,24 +63,25 @@ def compute_metrics(pred):
     return {"accuracy": acc, "f1": f1}
 
 
-def train(name):
+def train(name, eval_steps = 200, num_train_epochs=10):
     print("begin train: " + name)
     start_time = time.time()
     model, tokenizer = init_model_and_tokenizer()
     local_dataset = load_local_dataset(name + '.jsonl')
     tokenized_data = tokenize_data(tokenizer, local_dataset)
-    training_args = TrainingArguments(output_dir=name, load_best_model_at_end=True, save_total_limit=2, eval_steps=500, evaluation_strategy='steps')
+    training_args = TrainingArguments(output_dir=name, num_train_epochs=num_train_epochs, load_best_model_at_end=True,
+                                      save_total_limit=2, eval_steps=eval_steps, evaluation_strategy='steps', save_steps= eval_steps)
     trainer = Trainer(model=model, args=training_args, compute_metrics=compute_metrics,
-                  train_dataset=tokenized_data["train"],
-                  eval_dataset=tokenized_data["train"]
-                  )
+                      train_dataset=tokenized_data["train"],
+                      eval_dataset=tokenized_data["train"]
+                      )
     end_time = time.time()
     print("train successful: " + name + " : " + str(end_time - start_time))
     trainer.train()
 
 
 if __name__ == '__main__':
-    train('medicine')
-    train('finance')
-    train('wiki_csai')
-    train('hc3_all')
+    train('medicine', 100, 6)
+    train('finance', 200, 9)
+    train('wiki_csai', 50, 6)
+    train('hc3_all', 200, 15)
