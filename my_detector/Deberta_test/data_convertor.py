@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 
 def convert_hc3_dataset_to_train_and_test(row_path, row_name ,target_path, total_num, train_rate):
@@ -47,12 +48,73 @@ def merge_hc3_dataset(target_path):
         out_train_file.write(json.dumps(train_list))
 
 
+
+def convert_CHEAT_dataset_to_train_and_test(row_path, row_name, target_path, total_num, train_rate):
+    i = 0
+    train_list = []
+    test_list = []
+    with open(row_path + row_name, 'r', encoding='utf-8') as in_file_1:
+        for line in in_file_1:
+            i+=1
+            if i > total_num:
+                break
+            json_obj = json.loads(line)
+            gpt_obj = {}
+            gpt_obj['label'] = 1
+            gpt_obj['content'] = json_obj['abstract']
+            if i <= total_num * train_rate:
+                train_list.append(gpt_obj)
+            else:
+                test_list.append(gpt_obj)
+    i = 0
+    with open(row_path + 'ieee-init.jsonl', 'r', encoding='utf-8') as in_file_2:
+        for line in in_file_2:
+            i += 1
+            if i > total_num:
+                break
+            json_obj = json.loads(line)
+            human_obj = {}
+            human_obj['label'] = 0
+            human_obj['content'] = json_obj['abstract']
+            if i <= total_num * train_rate:
+                train_list.append(human_obj)
+            else:
+                test_list.append(human_obj)
+    with open(target_path + row_name + '.test', 'w', encoding='utf-8') as out_test_file:
+        out_test_file.write(json.dumps(test_list))
+    with open(target_path + row_name + '.train', 'w', encoding='utf-8') as out_train_file:
+        out_train_file.write(json.dumps(train_list))
+
+
+def merge_CHEAT_dataset(target_path):
+    test_list = []
+    train_list = []
+    for file in  os.listdir(target_path):
+        with open(target_path + file, 'r', encoding='utf-8') as f:
+            arr = json.load(f)
+            if file.find('test') != -1:
+                for obj in arr:
+                    test_list.append(obj)
+            else:
+                for obj in arr:
+                    train_list.append(obj)
+    with open(target_path + "cheat_all.jsonl.test", 'w', encoding='utf-8') as out_test_file:
+        out_test_file.write(json.dumps(test_list))
+    with open(target_path + "cheat_all.jsonl.train", 'w', encoding='utf-8') as out_train_file:
+        out_train_file.write(json.dumps(train_list))
+
+
 if __name__ == '__main__':
 
-    finance_total = 3600
-    medicine_total = 1200
-    wiki_total = 800
+    # finance_total = 3600
+    # medicine_total = 1200
+    # wiki_total = 800
     # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'finance.jsonl', './data/', finance_total, 0.2)
     # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'medicine.jsonl', './data/', medicine_total, 0.2)
     # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'wiki_csai.jsonl', './data/', wiki_total, 0.2)
-    merge_hc3_dataset('./data/')
+    # merge_hc3_dataset('./data/')
+    total = 4000
+    convert_CHEAT_dataset_to_train_and_test('../../data_collector/test_data/CHEAT/', 'ieee-chatgpt-fusion.jsonl', './data/', total, 0.2)
+    convert_CHEAT_dataset_to_train_and_test('../../data_collector/test_data/CHEAT/', 'ieee-chatgpt-generation.jsonl', './data/', total, 0.2)
+    convert_CHEAT_dataset_to_train_and_test('../../data_collector/test_data/CHEAT/', 'ieee-chatgpt-polish.jsonl', './data/', total, 0.2)
+    merge_CHEAT_dataset('./data/')
