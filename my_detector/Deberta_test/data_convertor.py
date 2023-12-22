@@ -80,6 +80,8 @@ def convert_CHEAT_dataset_to_train_and_test(row_path, row_name, target_path, tot
                 train_list.append(human_obj)
             else:
                 test_list.append(human_obj)
+    random.shuffle(test_list)
+    random.shuffle(train_list)
     with open(target_path + row_name + '.test', 'w', encoding='utf-8') as out_test_file:
         out_test_file.write(json.dumps(test_list))
     with open(target_path + row_name + '.train', 'w', encoding='utf-8') as out_train_file:
