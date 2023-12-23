@@ -63,14 +63,15 @@ def compute_metrics(pred):
     return {"accuracy": acc, "f1": f1}
 
 
-def train(name, eval_steps = 200, num_train_epochs=10):
+def train(name, eval_steps=200, num_train_epochs=10, file_type='.json'):
     print("begin train: " + name)
     start_time = time.time()
     model, tokenizer = init_model_and_tokenizer()
-    local_dataset = load_local_dataset(name + '.jsonl')
+    local_dataset = load_local_dataset(name + file_type)
     tokenized_data = tokenize_data(tokenizer, local_dataset)
     training_args = TrainingArguments(output_dir=name, num_train_epochs=num_train_epochs, load_best_model_at_end=True,
-                                      save_total_limit=2, eval_steps=eval_steps, evaluation_strategy='steps', save_steps= eval_steps)
+                                      save_total_limit=2, eval_steps=eval_steps, evaluation_strategy='steps',
+                                      save_steps=eval_steps)
     trainer = Trainer(model=model, args=training_args, compute_metrics=compute_metrics,
                       train_dataset=tokenized_data["train"],
                       eval_dataset=tokenized_data["train"]
@@ -89,4 +90,8 @@ if __name__ == '__main__':
     # train('ieee-chatgpt-fusion', 400, 20)
     # train('ieee-chatgpt-generation', 400, 20)
     # train('ieee-chatgpt-polish', 400, 20)
-    train('cheat_all', 400, 60)
+    # train('cheat_all', 400, 60)
+
+    train('essay_claude', 100, 20, '.txt')
+    train('essay_gpt', 100, 20, '.txt')
+    train('ghostbuster_all', 100, 40, '.txt')

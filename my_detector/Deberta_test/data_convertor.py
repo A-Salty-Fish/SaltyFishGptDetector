@@ -159,9 +159,9 @@ def merge_ghostbuster(target_path):
             else:
                 for obj in arr:
                     train_list.append(obj)
-    with open(target_path + "ghostbuster_all.text.test", 'w', encoding='utf-8') as out_test_file:
+    with open(target_path + "ghostbuster_all.txt.test", 'w', encoding='utf-8') as out_test_file:
         out_test_file.write(json.dumps(test_list))
-    with open(target_path + "ghostbuster_all.text.train", 'w', encoding='utf-8') as out_train_file:
+    with open(target_path + "ghostbuster_all.txt.train", 'w', encoding='utf-8') as out_train_file:
         out_train_file.write(json.dumps(train_list))
 
 
