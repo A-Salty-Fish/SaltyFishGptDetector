@@ -233,6 +233,6 @@ if __name__ == '__main__':
 # {'name': 'cheat_all', 'total_acc': 0.8398416460196058, 'human_acc': 0.7142626306151029, 'ai_acc': 0.9654206614241085}
 
 # cheat_all
-# {'name': 'ieee-chatgpt-fusion', 'total_acc': 0.65515625, 'human_acc': 0.45625, 'ai_acc': 0.8540625}
-# {'name': 'ieee-chatgpt-generation', 'total_acc': 0.72703125, 'human_acc': 0.45625, 'ai_acc': 0.9978125}
-# {'name': 'ieee-chatgpt-polish', 'total_acc': 0.72265625, 'human_acc': 0.45625, 'ai_acc': 0.9890625}
+# {'name': 'ieee-chatgpt-fusion', 'total_acc': 0.6615625, 'human_acc': 0.4621875, 'ai_acc': 0.8609375}
+# {'name': 'ieee-chatgpt-generation', 'total_acc': 0.7303125, 'human_acc': 0.4621875, 'ai_acc': 0.9984375}
+# {'name': 'ieee-chatgpt-polish', 'total_acc': 0.72265625, 'human_acc': 0.4621875, 'ai_acc': 0.983125}
