@@ -81,7 +81,12 @@ def train(name, eval_steps = 200, num_train_epochs=10):
 
 
 if __name__ == '__main__':
-    train('medicine', 400, 20)
-    train('finance', 400, 20)
-    train('wiki_csai', 400, 20)
-    train('hc3_all', 200, 15)
+    # train('medicine', 400, 20)
+    # train('finance', 400, 20)
+    # train('wiki_csai', 400, 20)
+    # train('hc3_all', 200, 15)
+
+    # train('ieee-chatgpt-fusion', 400, 20)
+    # train('ieee-chatgpt-generation', 400, 20)
+    # train('ieee-chatgpt-polish', 400, 20)
+    train('cheat_all', 400, 60)
