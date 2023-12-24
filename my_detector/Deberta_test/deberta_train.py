@@ -63,7 +63,7 @@ def compute_metrics(pred):
     return {"accuracy": acc, "f1": f1}
 
 
-def train(name, eval_steps=200, num_train_epochs=10, file_type='.json'):
+def train(name, eval_steps=200, num_train_epochs=10, file_type='.jsonl'):
     print("begin train: " + name)
     start_time = time.time()
     model, tokenizer = init_model_and_tokenizer()
@@ -92,6 +92,13 @@ if __name__ == '__main__':
     # train('ieee-chatgpt-polish', 400, 20)
     # train('cheat_all', 400, 60)
 
-    train('essay_claude', 100, 20, '.txt')
-    train('essay_gpt', 100, 20, '.txt')
-    train('ghostbuster_all', 100, 40, '.txt')
+    # train('essay_claude', 100, 20, '.txt')
+    # train('essay_gpt', 100, 20, '.txt')
+    # train('ghostbuster_all', 100, 40, '.txt')
+
+    # train('reddit_chatGPT', 300, 20)
+    # train('reddit_flant5', 300, 20)
+    # train('reddit_cohere', 300, 20)
+    # train('reddit_davinci', 300, 20)
+    # train('reddit_dolly', 300, 20)
+    train('reddit_all', 300, 100)

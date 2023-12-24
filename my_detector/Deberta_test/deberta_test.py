@@ -27,7 +27,7 @@ def init_model_and_tokenizer(name):
     print("load model successful: " + str(end_time - start_time))
     return model, tokenizer
 
-def test_accurate(model, tokenizer, name, file_type='.json'):
+def test_accurate(model, tokenizer, name, file_type='.jsonl'):
     human_correct = 0
     human_total = 0
     gpt_correct = 0
@@ -161,12 +161,12 @@ def test_all():
             "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
         })
 
-def test(name, file_type='.json'):
+def test(name, file_type='.jsonl'):
     model, tokenizer = init_model_and_tokenizer(name)
     return test_accurate(model, tokenizer, name, file_type)
 
 
-def test_cheat_all(name, datasets, file_type='.json'):
+def test_cheat_all(name, datasets, file_type='.jsonl'):
     model, tokenizer = init_model_and_tokenizer(name)
     for dataset in datasets:
         human_correct = 0
@@ -240,6 +240,43 @@ def test_ghostbuster_all(name, datasets, file_type='.txt'):
             })
 
 
+def test_reddit_all(name, datasets, file_type='.jsonl'):
+    model, tokenizer = init_model_and_tokenizer(name)
+    for dataset in datasets:
+        human_correct = 0
+        human_total = 0
+        gpt_correct = 0
+        gpt_total = 0
+        i = 0
+        with open('./data/' + dataset + file_type + '.test', 'r', encoding='utf-8') as test_input:
+            json_array = json.load(test_input)
+            for json_obj in json_array:
+                i += 2
+                print('test process : %s [%d/%d]' % (str(i / len(json_array)) + '%', i, len(json_array)), end='\r')
+                raw_input = json_obj['content']
+                raw_label = json_obj['label']
+                inputs = tokenizer([raw_input], padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+                outputs = model(**inputs)
+                pred_labels = outputs.logits.cpu().argmax(-1).numpy()
+                pred_label = pred_labels[0]
+
+                if raw_label == 0:
+                    human_total += 1
+                    if pred_label == 0:
+                        human_correct += 1
+                else:
+                    gpt_total += 1
+                    if pred_label == 1:
+                        gpt_correct += 1
+
+            print({
+                "name": dataset,
+                "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+                "human_acc": (1.0 * human_correct / human_total),
+                "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
+            })
+
+
 if __name__ == '__main__':
     # test_all()
     # print(test('medicine'))
@@ -256,7 +293,16 @@ if __name__ == '__main__':
     # print(test('essay_claude', '.txt'))
     # print(test('essay_gpt', '.txt'))
     # print(test('ghostbuster_all', '.txt'))
-    print(test_ghostbuster_all('ghostbuster_all', ['essay_claude', 'essay_gpt'], '.txt'))
+    # print(test_ghostbuster_all('ghostbuster_all', ['essay_claude', 'essay_gpt'], '.txt'))
+
+    # print(test('reddit_chatGPT'))
+    # print(test('reddit_flant5'))
+    # print(test('reddit_cohere'))
+    # print(test('reddit_davinci'))
+    # print(test('reddit_dolly'))
+    # print(test('reddit_all'))
+
+    print(test_reddit_all('reddit_all', ['reddit_chatGPT', 'reddit_flant5', 'reddit_cohere', 'reddit_davinci', 'reddit_dolly']))
 #
 # {'name': 'medicine', 'total_acc': 0.9958376690946931, 'human_acc': 0.9937565036420395, 'ai_acc': 0.9979188345473465}
 # {'name': 'finance', 'total_acc': 0.9908018049288442, 'human_acc': 0.984380423464075, 'ai_acc': 0.9972231863936133}
@@ -281,6 +327,22 @@ if __name__ == '__main__':
 
 # {'name': 'essay_claude', 'total_acc': 0.98, 'human_acc': 0.97375, 'ai_acc': 0.98625}
 # {'name': 'essay_gpt', 'total_acc': 0.989375, 'human_acc': 0.9825, 'ai_acc': 0.99625}
-# {'name': 'ghostbuster_all', 'total_acc': 0.9728125, 'human_acc': 0.95, 'ai_acc': 0.995625}
+
 # {'name': 'essay_claude', 'total_acc': 0.97125, 'human_acc': 0.95, 'ai_acc': 0.9925}
 # {'name': 'essay_gpt', 'total_acc': 0.974375, 'human_acc': 0.95, 'ai_acc': 0.99875}
+# {'name': 'ghostbuster_all', 'total_acc': 0.9728125, 'human_acc': 0.95, 'ai_acc': 0.995625}
+
+
+# {'name': 'reddit_flant5', 'total_acc': 0.9997916666666666, 'human_acc': 0.9995833333333334, 'ai_acc': 1.0}
+# {'name': 'reddit_cohere', 'total_acc': 0.944375, 'human_acc': 0.89, 'ai_acc': 0.99875}
+# {'name': 'reddit_davinci', 'total_acc': 0.9260416666666667, 'human_acc': 0.8558333333333333, 'ai_acc': 0.99625}
+# {'name': 'reddit_dolly', 'total_acc': 0.938125, 'human_acc': 0.88, 'ai_acc': 0.99625}
+# {'name': 'reddit_chatGPT', 'total_acc': 0.94375, 'human_acc': 0.8879166666666667, 'ai_acc': 0.9995833333333334}
+# {'name': 'reddit_all', 'total_acc': 0.8394583333333333, 'human_acc': 0.6795833333333333, 'ai_acc': 0.9993333333333333}
+
+# m4_all
+# {'name': 'reddit_chatGPT', 'total_acc': 0.8397916666666667, 'human_acc': 0.6795833333333333, 'ai_acc': 1.0}
+# {'name': 'reddit_flant5', 'total_acc': 0.8397916666666667, 'human_acc': 0.6795833333333333, 'ai_acc': 1.0}
+# {'name': 'reddit_cohere', 'total_acc': 0.8397916666666667, 'human_acc': 0.6795833333333333, 'ai_acc': 1.0}
+# {'name': 'reddit_davinci', 'total_acc': 0.839375, 'human_acc': 0.6795833333333333, 'ai_acc': 0.9991666666666666}
+# {'name': 'reddit_dolly', 'total_acc': 0.8385416666666666, 'human_acc': 0.6795833333333333, 'ai_acc': 0.9975}
