@@ -92,9 +92,17 @@ if __name__ == '__main__':
     #     print(nn)
     # Get the number of files in the current directory
     # print(num_files)
-    while True:
+
+    # while True:
+    #     try:
+    #         download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 25000)
+    #     except Exception as e:
+    #         print(e)
+    #         time.sleep(5)
+
+    for file in os.listdir('./row_data/arxiv_pdf'):
+        print(file)
         try:
-            download_by_category(["cs.DL", "cs.AI", "cs.IR", "cs.CV"], 25000)
+            convert_pdf_to_txt(file.replace('.pdf', ''))
         except Exception as e:
             print(e)
-            time.sleep(5)

@@ -309,8 +309,8 @@ if __name__ == '__main__':
 # {'name': 'wiki_csai', 'total_acc': 0.9695787831513261, 'human_acc': 0.9469578783151326, 'ai_acc': 0.9921996879875195}
 # {'name': 'hc3_all', 'total_acc': 0.9792549631942895, 'human_acc': 0.9616328351550301, 'ai_acc': 0.996877091233549}
 
-#hc3 all
-# {'name': 'finance', 'total_acc': 0.9849010760152724, 'human_acc': 0.9732731690385283, 'ai_acc': 0.9965289829920166}
+#hc3 all0.9732731690385283
+# {'name': 'finance', 'total_acc': 0.9849010760152724, 'human_acc': , 'ai_acc': 0.9965289829920166}
 # {'name': 'medicine', 'total_acc': 0.9963579604578564, 'human_acc': 0.9927159209157128, 'ai_acc': 1.0}
 # {'name': 'wiki_csai', 'total_acc': 0.9282371294851794, 'human_acc': 0.8627145085803433, 'ai_acc': 0.9937597503900156}
 
