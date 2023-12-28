@@ -68,7 +68,7 @@ def rewrite_objs(model, tokenizer):
                     json_objs.append(json_obj)
                 except Exception as e:
                     print(e)
-            total_num = 1000
+            total_num = 4000
             for i in range(0, total_num):
                 print('test process : %s [%d/%d]' % (str(i * 100 / total_num) + '%', i, total_num), end='\r')
                 json_obj = json_objs[i]
@@ -99,24 +99,53 @@ def replace_objs(model, tokenizer):
                     json_objs.append(json_obj)
                 except Exception as e:
                     print(e)
-            total_num = 1000
+            total_num = 4000
             for i in range(0, total_num):
                 print('test process : %s [%d/%d]' % (str(i * 100 / total_num) + '%', i, total_num), end='\r')
                 json_obj = json_objs[i]
                 json_obj['replace'] = replace_words(model, tokenizer, json_obj['content'])
                 out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
 
+json_objs = []
+# 初始化人类pdf内容
+def arxiv_init():
+    with open('./row_data/arxiv_paras/7.jsonl', 'r', encoding='utf-8') as f7, open('./row_data/arxiv_paras/8.jsonl', 'r', encoding='utf-8') as f8, open('./row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
+        with open('./init_1.jsonl', 'a', encoding='utf-8') as out_f:
+            for line in f7:
+                try:
+                    json_obj = json.loads(line)
+                    json_objs.append(json_obj)
+                except Exception as e:
+                    print(e)
+            for line in f8:
+                try:
+                    json_obj = json.loads(line)
+                    json_objs.append(json_obj)
+                except Exception as e:
+                    print(e)
+            for line in f9:
+                try:
+                    json_obj = json.loads(line)
+                    json_objs.append(json_obj)
+                except Exception as e:
+                    print(e)
+            total_num = 4000
+            for i in range(0, total_num):
+                print('test process : %s [%d/%d]' % (str(i * 100 / total_num) + '%', i, total_num), end='\r')
+                json_obj = json_objs[i]
+                out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
 
 
 if __name__ == '__main__':
-    model, tokenizer = init_model_and_tokenizer()
-    start_time = time.time()
-    print("begin rewrite")
-    rewrite_objs(model, tokenizer)
-    end_time = time.time()
-    print("end rewrite: " + str(end_time - start_time))
-    print("begin replace")
-    rewrite_objs(model, tokenizer)
-    end_time = time.time()
-    print("end replace: " + str(end_time - start_time))
+    arxiv_init()
+    # model, tokenizer = init_model_and_tokenizer()
+    # start_time = time.time()
+    # print("begin rewrite")
+    # rewrite_objs(model, tokenizer)
+    # end_time = time.time()
+    # print("end rewrite: " + str(end_time - start_time))
+    # print("begin replace")
+    # rewrite_objs(model, tokenizer)
+    # end_time = time.time()
+    # print("end replace: " + str(end_time - start_time))
     # print(chat(model, tokenizer, "Please rewrite the following paragraphs to keep the original meaning intact and prohibit the output of irrelevant content: As the Web matures, an increasing number of dynamic information sources and services come online. Unlike static Web pages, these resources generate their contents dynamically in response to a query. They can be HTML-based, searching the site via an HTML form, or be a Web service. Proliferation of such resources has led to a number of novel applications, including Web-based mashups, such as Google maps and Yahoo pipes, information integration"))
