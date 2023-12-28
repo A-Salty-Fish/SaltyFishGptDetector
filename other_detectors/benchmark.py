@@ -141,7 +141,7 @@ def get_classifier(method):
     return out_classifier
 
 
-def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False):
+def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False, test_file_name=None):
     start_time = time.time()
     result = {
         'human': [],
@@ -161,7 +161,7 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False
     if test_dataset == 'm4':
         tmp_result = data_convertor.convert_m4(test_dataset_path)
     if test_dataset == 'arxiv_cs':
-        tmp_result = data_convertor.convert_arxiv_cs(test_dataset_path, test_dataset)
+        tmp_result = data_convertor.convert_arxiv_cs(test_dataset_path, test_file_name)
 
     result['human'] = [x for x in tmp_result if x['label'] == 0]
     result['ai'] = [x for x in tmp_result if x['label'] == 1]
@@ -276,15 +276,17 @@ def test_classifier_and_dataset(classifier, data_set):
     return test_result
 
 
-def multi_test(method, test_datasets, test_dataset_paths, test_data_nums):
+def multi_test(method, test_datasets, test_dataset_paths, test_data_nums, test_file_names=None):
     print("method test begin:" + method)
     start_time = datetime.datetime.now()
     classifier = get_classifier(method)
     data_sets = []
     multi_test_result = []
+    if test_file_names == None:
+        test_file_names = [None for i in range(0, min(len(test_datasets), len(test_dataset_paths)))]
     for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
         print("begin test dataset: " + test_datasets[i])
-        data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums)
+        data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums, test_file_name=test_file_names[i])
         data_sets.append(data_set)
         multi_test_result.append(test_classifier_and_dataset(classifier, data_set))
         multi_test_result[i]['dataset'] = test_datasets[i]
@@ -399,4 +401,4 @@ if __name__ == '__main__':
     for method in support_methods:
         output_test_result_table(multi_test(method, 'arxiv_cs'.split(','),
                                             '../data_collector/test_data/arxiv_cs'.split(
-                                                ','), 1000))
+                                                ','), 1000, ['rewrite_1.jsonl']))
