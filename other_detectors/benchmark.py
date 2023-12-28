@@ -34,7 +34,8 @@ support_datasets = [
     'ghostbuster',
     'hc3_english',
     'hc3_plus_english',
-    'm4'
+    'm4',
+    'arxiv_cs'
 ]
 
 
@@ -159,6 +160,8 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False
         tmp_result = data_convertor.convert_hc3_plus_english(test_dataset_path)
     if test_dataset == 'm4':
         tmp_result = data_convertor.convert_m4(test_dataset_path)
+    if test_dataset == 'arxiv_cs':
+        tmp_result = data_convertor.convert_arxiv_cs(test_dataset_path, test_dataset)
 
     result['human'] = [x for x in tmp_result if x['label'] == 0]
     result['ai'] = [x for x in tmp_result if x['label'] == 1]
@@ -385,10 +388,15 @@ if __name__ == '__main__':
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 100))
 
-    output_test_result_table(multi_test('detect_gpt', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
-                                        '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
-                                            ','), 1000))
+    # output_test_result_table(multi_test('detect_gpt', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
+    #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
+    #                                         ','), 1000))
 
     # output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 1000))
+
+    for method in support_methods:
+        output_test_result_table(multi_test(method, 'arxiv_cs'.split(','),
+                                            '../data_collector/test_data/arxiv_cs'.split(
+                                                ','), 1000))

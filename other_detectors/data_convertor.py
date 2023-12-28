@@ -131,10 +131,30 @@ def convert_m4(m4_path):
                     print(file + ":" + line)
     return result
 
+
+def convert_arxiv_cs(arxiv_cs_path, file_name='replace_1.jsonl'):
+    result = []
+    with open(arxiv_cs_path + file_name, 'r', encoding='utf-8') as machine_f, open(arxiv_cs_path + 'init_1.jsonl', 'r', encoding='utf-8') as human_f:
+        for line in machine_f:
+            json_obj = json.loads(line)
+            result.append({
+                'content': json_obj['content'],
+                'label': 1
+            })
+        for line in human_f:
+            json_obj = json.loads(line)
+            result.append({
+                'content': json_obj['content'],
+                'label': 0
+            })
+    return result
+
+
 if __name__ == '__main__':
     # print(convert_CHEAT_dataset("../data_collector/test_data/CHEAT"))
     # print(len(convert_ghostbuster_dataset('../data_collector/test_data/ghostbuster')))
     # print(len(convert_hc3_english('..\\data_collector\\test_data\\hc3_english')))
     # print(len(convert_hc3_plus_english('..\\data_collector\\test_data\\hc3_plus_english')))
     # print(len(convert_m4('..\\data_collector\\test_data\\m4')))
+    print(len(convert_arxiv_cs('../data_collector/test_data/arxiv_cs/', 'rewrite_1.jsonl')))
     pass
