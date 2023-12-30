@@ -55,7 +55,7 @@ def test_accurate(model, tokenizer, name, file_type='.jsonl'):
                     gpt_correct += 1
 
         return {
-            "name": name,
+            "test_dataset": name,
             "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
             "human_acc": (1.0 * human_correct / human_total),
             "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
@@ -165,6 +165,12 @@ def test(name, file_type='.jsonl'):
     model, tokenizer = init_model_and_tokenizer(name)
     return test_accurate(model, tokenizer, name, file_type)
 
+
+def test_with_dataset(train_name, test_name, file_type = '.jsonl'):
+    model, tokenizer = init_model_and_tokenizer(train_name)
+    test_result = test_accurate(model, tokenizer, test_name, file_type)
+    test_result['train_name'] = train_name
+    return test_result
 
 def test_cheat_all(name, datasets, file_type='.jsonl'):
     model, tokenizer = init_model_and_tokenizer(name)

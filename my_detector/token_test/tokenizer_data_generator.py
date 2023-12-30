@@ -66,40 +66,41 @@ def random_fill_token(text, fill_num=1, max_num=50):
 
 
 def output_mask_results():
-    with open('./data/medicine_medicine.jsonl.acc', 'r', encoding='utf-8') as f, open('./masked_result_1.jsonl', 'a', encoding='utf-8') as out_f:
-        for line in f:
-            print(1)
-            try:
-                json_obj = json.loads(line)
-                res_objs = random_fill_token(json_obj['content'],1,50)
-                for res_obj in res_objs:
-                    res_obj['label'] = json_obj['label']
-                    out_f.write(json.dumps(res_obj, ensure_ascii=False) + '\n')
-                    print(1)
-            except Exception as e:
-                print(e)
-    with open('./data/medicine_medicine.jsonl.acc', 'r', encoding='utf-8') as f, open('./masked_result_2.jsonl', 'a', encoding='utf-8') as out_f:
-        for line in f:
-            print(1)
-            try:
-                json_obj = json.loads(line)
-                res_objs = random_fill_token(json_obj['content'],2,30)
-                for res_obj in res_objs:
-                    res_obj['label'] = json_obj['label']
-                    out_f.write(json.dumps(res_obj, ensure_ascii=False) + '\n')
-                    print(1)
-            except Exception as e:
-                print(e)
+    # with open('./data/medicine_medicine.jsonl.acc', 'r', encoding='utf-8') as f, open('./masked_result_1.jsonl', 'a', encoding='utf-8') as out_f:
+    #     for line in f:
+    #         print(1)
+    #         try:
+    #             json_obj = json.loads(line)
+    #             res_objs = random_fill_token(json_obj['content'],1,50)
+    #             for res_obj in res_objs:
+    #                 res_obj['label'] = json_obj['label']
+    #                 out_f.write(json.dumps(res_obj, ensure_ascii=False) + '\n')
+    #                 print(1)
+    #         except Exception as e:
+    #             print(e)
+    i= 0
+    # with open('./data/medicine_medicine.jsonl.acc', 'r', encoding='utf-8') as f, open('./masked_result_2.jsonl', 'a', encoding='utf-8') as out_f:
+    #     for line in f:
+    #         i+=1
+    #         try:
+    #             json_obj = json.loads(line)
+    #             res_objs = random_fill_token(json_obj['content'],2,30)
+    #             for res_obj in res_objs:
+    #                 res_obj['label'] = json_obj['label']
+    #                 out_f.write(json.dumps(res_obj, ensure_ascii=False) + '\n')
+    #                 print(i)
+    #         except Exception as e:
+    #             print(e)
     with open('./data/medicine_medicine.jsonl.acc', 'r', encoding='utf-8') as f, open('./masked_result_3.jsonl', 'a', encoding='utf-8') as out_f:
         for line in f:
-            print(1)
+            i+=1
+            print(i)
             try:
                 json_obj = json.loads(line)
                 res_objs = random_fill_token(json_obj['content'],3,20)
                 for res_obj in res_objs:
                     res_obj['label'] = json_obj['label']
                     out_f.write(json.dumps(res_obj, ensure_ascii=False) + '\n')
-                    print(1)
             except Exception as e:
                 print(e)
 

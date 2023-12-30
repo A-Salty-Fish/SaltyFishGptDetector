@@ -232,13 +232,13 @@ def merge_ghostbuster(target_path):
 
 if __name__ == '__main__':
     pass
-    # finance_total = 3600
-    # medicine_total = 1200
-    # wiki_total = 800
-    # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'finance.jsonl', './data/', finance_total, 0.2)
-    # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'medicine.jsonl', './data/', medicine_total, 0.2)
-    # convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'wiki_csai.jsonl', './data/', wiki_total, 0.2)
-    # merge_hc3_dataset('./data/')
+    finance_total = 3600
+    medicine_total = 1200
+    wiki_total = 800
+    convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'finance.jsonl', '../token_test/data/', finance_total, 0.1)
+    convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'medicine.jsonl', '../token_test/data/', medicine_total, 0.1)
+    convert_hc3_dataset_to_train_and_test('../../data_collector/test_data/hc3_english/', 'wiki_csai.jsonl', '../token_test/data/', wiki_total, 0.1)
+    merge_hc3_dataset('../token_test/data/')
     # total = 4000
     # convert_CHEAT_dataset_to_train_and_test('../../data_collector/test_data/CHEAT/', 'ieee-chatgpt-fusion.jsonl', './data/', total, 0.2)
     # convert_CHEAT_dataset_to_train_and_test('../../data_collector/test_data/CHEAT/', 'ieee-chatgpt-generation.jsonl', './data/', total, 0.2)
@@ -250,10 +250,10 @@ if __name__ == '__main__':
     # convert_ghostbuster_dataset_to_train_and_test('../../data_collector/test_data/ghostbuster/', 'essay_gpt.txt', './data/' ,total, 0.2)
     # merge_ghostbuster('./data/')
 
-    total = 3000
-    convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_chatGPT.jsonl', './data/', total ,0.2)
-    convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_flant5.jsonl', './data/', total ,0.2)
-    convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_cohere.jsonl', './data/', total ,0.2)
-    convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_davinci.jsonl', './data/', total ,0.2)
-    convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_dolly.jsonl', './data/', total ,0.2)
-    merge_m4('./data/')
+    # total = 3000
+    # convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_chatGPT.jsonl', './data/', total ,0.2)
+    # convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_flant5.jsonl', './data/', total ,0.2)
+    # convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_cohere.jsonl', './data/', total ,0.2)
+    # convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_davinci.jsonl', './data/', total ,0.2)
+    # convert_m4_dataset_to_train_and_test('../../data_collector/test_data/m4/', 'reddit_dolly.jsonl', './data/', total ,0.2)
+    # merge_m4('./data/')
