@@ -132,20 +132,18 @@ def convert_m4(m4_path):
     return result
 
 
-def convert_arxiv_cs(arxiv_cs_path, test_file_name='replace_1.jsonl'):
+def convert_arxiv_cs(arxiv_cs_path, test_file_name='replace_1.jsonl', test_key='replace'):
     result = []
-    with open(arxiv_cs_path + '/' + test_file_name, 'r', encoding='utf-8') as machine_f, open(arxiv_cs_path + '/' + 'init_1.jsonl', 'r', encoding='utf-8') as human_f:
-        for line in machine_f:
+    with open(arxiv_cs_path + '/' + test_file_name, 'r', encoding='utf-8') as f:
+        for line in f:
             json_obj = json.loads(line)
+            result.append({
+                'content': json_obj[test_key],
+                'label': 1
+            })
             result.append({
                 'content': json_obj['content'],
                 'label': 1
-            })
-        for line in human_f:
-            json_obj = json.loads(line)
-            result.append({
-                'content': json_obj['content'],
-                'label': 0
             })
     return result
 

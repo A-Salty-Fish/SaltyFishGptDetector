@@ -141,7 +141,7 @@ def get_classifier(method):
     return out_classifier
 
 
-def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False, test_file_name=None):
+def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False, test_file_name=None, test_key=None):
     start_time = time.time()
     result = {
         'human': [],
@@ -161,7 +161,7 @@ def get_test_data(test_dataset, test_dataset_path, test_data_nums, shuffle=False
     if test_dataset == 'm4':
         tmp_result = data_convertor.convert_m4(test_dataset_path)
     if test_dataset == 'arxiv_cs':
-        tmp_result = data_convertor.convert_arxiv_cs(test_dataset_path, test_file_name)
+        tmp_result = data_convertor.convert_arxiv_cs(test_dataset_path, test_file_name, test_key)
 
     result['human'] = [x for x in tmp_result if x['label'] == 0]
     result['ai'] = [x for x in tmp_result if x['label'] == 1]
@@ -276,7 +276,7 @@ def test_classifier_and_dataset(classifier, data_set):
     return test_result
 
 
-def multi_test(method, test_datasets, test_dataset_paths, test_data_nums, test_file_names=None):
+def multi_test(method, test_datasets, test_dataset_paths, test_data_nums, test_file_names=None, test_keys=None):
     print("method test begin:" + method)
     start_time = datetime.datetime.now()
     classifier = get_classifier(method)
@@ -284,9 +284,11 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums, test_f
     multi_test_result = []
     if test_file_names == None:
         test_file_names = [None for i in range(0, min(len(test_datasets), len(test_dataset_paths)))]
+    if test_keys == None:
+        test_keys = [None for i in range(0, min(len(test_datasets), len(test_dataset_paths)))]
     for i in range(0, min(len(test_datasets), len(test_dataset_paths))):
         print("begin test dataset: " + test_datasets[i])
-        data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums, test_file_name=test_file_names[i])
+        data_set = get_test_data(test_datasets[i], test_dataset_paths[i], test_data_nums, test_file_name=test_file_names[i], test_key=test_keys[i])
         data_sets.append(data_set)
         multi_test_result.append(test_classifier_and_dataset(classifier, data_set))
         multi_test_result[i]['dataset'] = test_datasets[i]
@@ -397,8 +399,9 @@ if __name__ == '__main__':
     # output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 1000))
-
+    result = []
     for method in support_methods:
-        output_test_result_table(multi_test(method, 'arxiv_cs'.split(','),
+        result.append(multi_test(method, 'arxiv_cs'.split(','),
                                             '../data_collector/test_data/arxiv_cs'.split(
-                                                ','), 1000, ['rewrite_1.jsonl']))
+                                                ','), 1000, ['rewrite_1.jsonl'], ['rewrite']))
+    output_test_result_table(result)
