@@ -399,9 +399,12 @@ if __name__ == '__main__':
     # output_test_result_table(multi_test('hc3_ling', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 1000))
-    result = []
-    for method in support_methods:
-        result.append(multi_test(method, 'arxiv_cs'.split(','),
-                                            '../data_collector/test_data/arxiv_cs'.split(
-                                                ','), 1000, ['rewrite_1.jsonl'], ['rewrite']))
-    output_test_result_table(result)
+
+    for key in ['rewrite', 'replace', 'continue', 'academic', 'summarize']:
+        print(key + ' begin')
+        result = []
+        for method in support_methods:
+            result.append(multi_test(method, 'arxiv_cs'.split(','),
+                                                '../data_collector/test_data/arxiv_cs'.split(
+                                                    ','), 1000, [key + '_1.jsonl'], [key])[0])
+        output_test_result_table(result)

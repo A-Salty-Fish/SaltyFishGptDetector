@@ -167,6 +167,52 @@ def test_with_masked_data(model, tokenizer, train_name, test_name, file_type='.j
                 "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
             }
 
+def test_split_accurate(model, tokenizer, train_name , test_name, file_type='.jsonl'):
+    human_correct = 0
+    human_total = 0
+    gpt_correct = 0
+    gpt_total = 0
+    i = 0
+    with open('./data/' + train_name + "_" + test_name + file_type + '.split.acc', 'a', encoding='utf-8') as test_output:
+        accurate_array = []
+        with open('./data/' + test_name + file_type + '.test', 'r', encoding='utf-8') as test_input:
+            json_array = json.load(test_input)
+            for json_obj in json_array:
+                i += 1
+                print('test process : %s [%d/%d]' % (str(i*100 / len(json_array)) + '%', i, len(json_array)), end='\r')
+                raw_input = json_obj['content']
+                raw_label = json_obj['label']
+
+                words = raw_input.split(' ')
+                for begin_word in range(0, int(len(words) / 10) + 1):
+
+                    split_input = " ".join(words[begin_word: begin_word + 10])
+                    inputs = tokenizer([split_input], padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+                    outputs = model(**inputs)
+                    pred_labels = outputs.logits.cpu().argmax(-1).numpy()
+                    pred_label = pred_labels[0]
+                    split_json_obj = {
+                        'label': raw_label,
+                        "content": split_input
+                    }
+                    if raw_label == 0:
+                        human_total += 1
+                        if pred_label == 0:
+                            human_correct += 1
+                            accurate_array.append(split_json_obj)
+                    else:
+                        gpt_total += 1
+                        if pred_label == 1:
+                            gpt_correct += 1
+                            accurate_array.append(split_json_obj)
+            for acc in accurate_array:
+                test_output.write(json.dumps(acc, ensure_ascii=False) + '\n')
+            return {
+                "test_dataset": test_name,
+                "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+                "human_acc": (1.0 * human_correct / human_total),
+                "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
+            }
 
 
 if __name__ == '__main__':
@@ -191,4 +237,5 @@ if __name__ == '__main__':
     # {'test_dataset': 'medicine', 'total_acc': 0.8580018501387604, 'human_acc': 0.7298797409805735, 'ai_acc': 0.9861239592969473, 'train_name': 'wiki_csai'}
 
     model, tokenizer = init_model_and_tokenizer('medicine')
-    test_with_masked_data(model, tokenizer,  'medicine', 'masked_1')
+    # test_with_masked_data(model, tokenizer,  'medicine', 'masked_1')
+    test_split_accurate(model, tokenizer, 'medicine', 'medicine')
