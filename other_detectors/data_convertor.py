@@ -143,7 +143,7 @@ def convert_arxiv_cs(arxiv_cs_path, test_file_name='replace_1.jsonl', test_key='
             })
             result.append({
                 'content': json_obj['content'],
-                'label': 1
+                'label': 0
             })
     return result
 
