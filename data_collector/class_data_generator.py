@@ -1,4 +1,5 @@
 #!pip install transformers[sentencepiece]
+import json
 import time
 
 from transformers import pipeline
@@ -15,7 +16,7 @@ def init_classifier():
 
 def classify(classifier, text, labels):
     result = []
-    output = classifier(sequence_to_classify, candidate_labels, multi_label=False)
+    output = classifier(text, labels, multi_label=False)
     for i in range(0, len(output['labels'])):
         result.append([output['labels'][i], output['scores'][i]])
     if len(result) == 0:
@@ -27,6 +28,20 @@ if __name__ == '__main__':
     classifier = init_classifier()
     sequence_to_classify = "Angela Merkel is a politician in Germany and leader of the CDU"
 
-    candidate_labels = ["politics", "economy", "entertainment", "environment"]
+    candidate_labels = ["medicine",
+                        "law",
+                        "computer science",
+                        "finance",
+                        "pedagogy",
+                        "biology",
+                        "psychology",
+                        "political" ,
+                        "sports" ,
+                        "chemistry"
+                        ]
 
-    print(classify(classifier, sequence_to_classify, candidate_labels))
+    with open('./test_data/hc3_english/medicine.jsonl', 'r', encoding='utf-8') as input_f:
+        for line in input_f:
+            json_obj = json.loads(line)
+            print(classify(classifier, json_obj['human_answers'][0], candidate_labels))
+            print(classify(classifier, json_obj['chatgpt_answers'][0], candidate_labels))
