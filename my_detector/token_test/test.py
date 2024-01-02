@@ -215,6 +215,56 @@ def test_split_accurate(model, tokenizer, train_name , test_name, file_type='.js
             }
 
 
+def test_split_tokenized_output(model, tokenizer, train_name, test_name, file_type='.jsonl'):
+    human_correct = 0
+    human_total = 0
+    gpt_correct = 0
+    gpt_total = 0
+    i = 0
+    with open('./' + train_name + "_1_" + test_name + file_type, 'a', encoding='utf-8') as test_output:
+        error_array = []
+        for file_name in ['masked_result_1_1.jsonl', 'masked_result_2_1.jsonl', 'masked_result_3_1.jsonl']:
+            with open('./' + file_name, 'r', encoding='utf-8') as test_input:
+                for line in test_input:
+                    try:
+                        json_obj = json.loads(line)
+                        i += 1
+                        print('test process : %s , error num: %s' % (str(i), str(len(error_array))), end='\r')
+                        raw_input = json_obj['result_text']
+                        raw_label = json_obj['label']
+                        inputs = tokenizer([raw_input], padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+                        outputs = model(**inputs)
+                        pred_labels = outputs.logits.cpu().argmax(-1).numpy()
+                        pred_label = pred_labels[0]
+
+                        if raw_label == 0:
+                            human_total += 1
+                            if pred_label == 0:
+                                human_correct += 1
+                            else:
+                                error_array.append(json_obj)
+
+                        else:
+                            gpt_total += 1
+                            if pred_label == 1:
+                                gpt_correct += 1
+                            else:
+                                error_array.append(json_obj)
+
+                    except Exception as e:
+                        print(e)
+                        continue
+        for error_obj in error_array:
+            test_output.write(json.dumps(error_obj) + '\n')
+        return {
+            "train": train_name,
+            "test_dataset": test_name,
+            "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+            "human_acc": (1.0 * human_correct / human_total),
+            "ai_acc": (1.0 * (gpt_correct) / (gpt_total))
+        }
+
+
 if __name__ == '__main__':
     # print(test_with_dataset('finance', 'finance'))
     # print(test_with_dataset('finance', 'medicine'))
@@ -238,4 +288,6 @@ if __name__ == '__main__':
 
     model, tokenizer = init_model_and_tokenizer('medicine')
     # test_with_masked_data(model, tokenizer,  'medicine', 'masked_1')
-    test_split_accurate(model, tokenizer, 'medicine', 'medicine')
+    # test_split_accurate(model, tokenizer, 'medicine', 'medicine')
+
+    test_split_tokenized_output(model, tokenizer, 'medicine', 'medicine')
