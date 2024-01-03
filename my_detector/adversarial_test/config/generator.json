@@ -22,5 +22,11 @@
     "please pretend to write a human info in the field of {}. about 100 words",
     "please pretend to write a theory in the field of {}. about 100 words",
     "please pretend to write a theory in the field of {}. about 100 words"
-  ]
+  ],
+  "init_eval": {
+    "init_model_path": "./tmp/init",
+    "test_file": "./data/class_chat_data.jsonl",
+    "random_test": false,
+    "test_num_per_label": 100
+  }
 }
