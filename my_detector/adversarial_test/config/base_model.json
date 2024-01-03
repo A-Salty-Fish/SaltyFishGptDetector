@@ -12,5 +12,9 @@
   "chat": {
     "model_name": "mistralai/Mistral-7B-Instruct-v0.2",
     "tokenizer_name": "mistralai/Mistral-7B-Instruct-v0.2"
+  },
+  "utc": {
+      "type": "zero-shot-classification",
+      "model_name": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
   }
 }

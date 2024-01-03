@@ -266,7 +266,18 @@ def generate_class_chat_data_2(model, tokenizer):
                         "sports" ,
                         "chemistry"
                         ]
-    ,
+    prompt_templates = [
+        'please randomly write in the field of {}. about 100 words',
+        'please pretend to answer a question in the field of {}. about 100 words',
+        'please pretend to make up a question in the field of {}. about 100 words',
+        'please pretend to make up a story in the field of {}. about 100 words',
+        'please pretend to write a news in the field of {}. about 100 words',
+        'please pretend to write a essay in the field of {}. about 100 words',
+        'please pretend to write a paper in the field of {}. about 100 words',
+        'please pretend to write a human info in the field of {}. about 100 words',
+        'please pretend to write a theory in the field of {}. about 100 words',
+        'please write any info in the field of {}. about 100 words',
+    ]
     with open('./class_chat_data_2.jsonl', 'a', encoding='utf-8') as out_f:
         for candidate_label in candidate_labels:
             # print(candidate_label)
