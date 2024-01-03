@@ -1,3 +1,17 @@
 {
-
+  "init": {
+    "train_file": "./data/medicine.jsonl.train",
+    "test_file": "./data/medicine.jsonl.test",
+    "eval_steps": 20,
+    "save_steps": 20,
+    "num_train_epochs": 12,
+    "save_total_limit": 2,
+    "evaluation_strategy": "steps",
+    "output_dir": "./tmp/init"
+  },
+  "test_files": {
+    "finance": "../token_test/data/finance.jsonl.test",
+    "medicine": "../token_test/data/medicine.jsonl.test",
+    "wiki_csai": "../token_test/data/wiki_csai.jsonl.test"
+  }
 }
