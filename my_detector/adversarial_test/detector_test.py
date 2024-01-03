@@ -40,6 +40,32 @@ def init_init_model_and_tokenizer(detector_config, base_test_model_config):
     print("load model successful: " + str(end_time - start_time))
     return model, tokenizer
 
+def init_cur_model_and_tokenizer(detector_config, base_test_model_config):
+    start_time = time.time()
+
+
+    tokenizer=AutoTokenizer.from_pretrained(base_test_model_config['tokenizer_name'], model_max_length=base_test_model_config['max_length'])
+
+    max_step = -1
+
+    output_dir = detector_config['cur']['output_dir']
+
+    for file in os.listdir(output_dir):
+        if file.find('checkpoint') == -1:
+            continue
+        max_step = max(max_step, int(file.split('-')[1]))
+
+    model_path = output_dir + "/checkpoint-" + str(max_step)
+    print('load model:' + model_path)
+    model = AutoModelForSequenceClassification.from_pretrained(model_path, num_labels=base_test_model_config['num_labels'])
+
+    print(DEVICE)
+    model = model.to(DEVICE)
+
+    end_time = time.time()
+    print("load model successful: " + str(end_time - start_time))
+    return model, tokenizer
+
 
 def test_accurate(model, tokenizer, train_name, test_name, test_file):
     start_time = time.time()
@@ -83,9 +109,24 @@ def test_accurate(model, tokenizer, train_name, test_name, test_file):
         }
 
 if __name__ == '__main__':
-    detector_config = load_detector_config()
+    # detector_config = load_detector_config()
+    # base_test_model_config = load_test_base_model_config()
+    # model, tokenizer = init_init_model_and_tokenizer(detector_config, base_test_model_config)
+    # result = []
+    # for name in detector_config['test_files']:
+    #     result.append(test_accurate(model, tokenizer, 'medicine', name, detector_config['test_files'][name]))
+    # print(result)
+
+    # [{'train_name': 'medicine', 'test_name': 'finance', 'total_acc': 0.6019746991669238,
+    #   'human_acc': 0.22153656278926256, 'ai_acc': 0.982412835544585},
+    #  {'train_name': 'medicine', 'test_name': 'medicine', 'total_acc': 0.9930619796484736,
+    #   'human_acc': 0.9888991674375578, 'ai_acc': 0.9972247918593895},
+    #  {'train_name': 'medicine', 'test_name': 'wiki_csai', 'total_acc': 0.5284327323162274,
+    #   'human_acc': 0.0638002773925104, 'ai_acc': 0.9930651872399445}]
+
+    detector_config = load_detector_config('./tmp/train_1/', 'detector.json')
     base_test_model_config = load_test_base_model_config()
-    model, tokenizer = init_init_model_and_tokenizer(detector_config, base_test_model_config)
+    model, tokenizer = init_cur_model_and_tokenizer(detector_config, base_test_model_config)
     result = []
     for name in detector_config['test_files']:
         result.append(test_accurate(model, tokenizer, 'medicine', name, detector_config['test_files'][name]))

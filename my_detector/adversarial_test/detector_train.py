@@ -13,6 +13,12 @@ def load_detector_init_train_config(base_path='./config/', config_name='detector
     with open(base_path + config_name, 'r', encoding='utf-8') as text_labels_file:
         return json.load(text_labels_file)['init']
 
+
+def load_detector_cur_train_config(base_path='./config/', config_name='detector.json'):
+    with open(base_path + config_name, 'r', encoding='utf-8') as text_labels_file:
+        return json.load(text_labels_file)['cur']
+
+
 def load_train_base_model_config(base_path='./config/', config_name='base_model.json'):
     with open(base_path + config_name, 'r', encoding='utf-8') as text_labels_file:
         return json.load(text_labels_file)['train']
@@ -108,10 +114,41 @@ def init_train(base_train_model_config, detector_init_train_config):
     trainer.train()
 
 
+
+def adversarial_train(base_train_model_config, detector_train_config):
+    print("begin train")
+    start_time = time.time()
+
+    model, tokenizer = init_base_model_and_tokenizer(base_train_model_config)
+
+    train_file = detector_train_config['train_file']
+    test_file = detector_train_config['test_file']
+    local_dataset = load_local_dataset(train_file, test_file)
+
+    tokenized_data = tokenize_data(tokenizer, local_dataset)
+
+    training_args = convert_train_config_to_train_args(train_config=detector_train_config)
+
+    trainer = Trainer(model=model, args=training_args, compute_metrics=compute_metrics,
+                      train_dataset=tokenized_data["train"],
+                      eval_dataset=tokenized_data["train"]
+                      )
+
+    end_time = time.time()
+    print("train successful " + " : " + str(end_time - start_time))
+    trainer.train()
+
+
+
 if __name__ == '__main__':
     # print(load_detector_init_train_config())
     # print(convert_train_config_to_train_args(load_detector_init_train_config()))
 
+    # base_model_config = load_train_base_model_config()
+    # detector_init_train_config = load_detector_init_train_config()
+    # init_train(base_model_config, detector_init_train_config)
+
     base_model_config = load_train_base_model_config()
-    detector_init_train_config = load_detector_init_train_config()
-    init_train(base_model_config, detector_init_train_config)
+    detector_train_config = load_detector_cur_train_config('./tmp/train_1/', 'detector.json')
+    adversarial_train(base_model_config, detector_train_config)
+
