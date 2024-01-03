@@ -1,0 +1,16 @@
+{
+  "train": {
+    "model_name": "microsoft/deberta-v3-small",
+    "tokenizer_name": "microsoft/deberta-v3-small",
+    "max_length": 512
+  },
+  "test": {
+    "tokenizer_name": "microsoft/deberta-v3-small",
+    "max_length": 512,
+    "num_labels": 2
+  },
+  "chat": {
+    "model_name": "mistralai/Mistral-7B-Instruct-v0.2",
+    "tokenizer_name": "mistralai/Mistral-7B-Instruct-v0.2"
+  }
+}

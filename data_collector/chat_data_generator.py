@@ -8,8 +8,8 @@ device = "cuda"  # the device to load the model onto
 
 def init_model_and_tokenizer():
     start_time = time.time()
-    model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
-    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")
+    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+    model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
 
     end_time = time.time()
     print("load model successful: " + str(end_time - start_time))
@@ -214,31 +214,108 @@ def arxiv_init():
                 out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
 
 
+def generate_class_chat_data(model, tokenizer):
+    candidate_labels = ["medicine",
+                        "law",
+                        "computer science",
+                        "finance",
+                        "pedagogy",
+                        "biology",
+                        "psychology",
+                        "political" ,
+                        "sports" ,
+                        "chemistry"
+                        ]
+    prompt_templates = [
+        'please randomly write in the field of {}. about 50 words',
+        'please pretend to answer a question in the field of {}. about 50 words ',
+        'please pretend to make up a question in the field of {}. about 50 words ',
+        'please pretend to make up a story in the field of {}. about 50 words ',
+        'please pretend to write a news in the field of {}. about 50 words ',
+        'please pretend to write a essay in the field of {}. about 50 words',
+        'please pretend to write a paper in the field of {}. about 50 words',
+        'please pretend to write a human info in the field of {}. about 50 words',
+        'please pretend to write a theory in the field of {}. about 50 words',
+        'please write any info in the field of {}. about 50 words',
+    ]
+    with open('./class_chat_data.jsonl', 'a', encoding='utf-8') as out_f:
+        for candidate_label in candidate_labels:
+            print(candidate_label)
+            for i in range(0, 50):
+                print(i)
+                for prompt_template in prompt_templates:
+                    print(prompt_template)
+                    chat_res = chat(model, tokenizer, prompt_template.format(candidate_label))
+                    json_obj = {}
+                    json_obj['label'] = 1
+                    json_obj['content'] = chat_res
+                    json_obj['class_label'] = candidate_label
+                    json_obj['prompt_template'] = prompt_template
+                    out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+
+
+def generate_class_chat_data_2(model, tokenizer):
+    candidate_labels = ["medicine",
+                        "law",
+                        "computer science",
+                        "finance",
+                        "pedagogy",
+                        "biology",
+                        "psychology",
+                        "political" ,
+                        "sports" ,
+                        "chemistry"
+                        ]
+    ,
+    with open('./class_chat_data_2.jsonl', 'a', encoding='utf-8') as out_f:
+        for candidate_label in candidate_labels:
+            # print(candidate_label)
+            for i in range(0, 100):
+                # print(i)
+                for prompt_template in prompt_templates:
+                    print(candidate_label + ":" + prompt_template + ":" + str(i))
+                    chat_res = chat(model, tokenizer, prompt_template.format(candidate_label))
+                    json_obj = {}
+                    json_obj['label'] = 1
+                    json_obj['content'] = chat_res
+                    json_obj['class_label'] = candidate_label
+                    json_obj['prompt_template'] = prompt_template
+                    out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+
 if __name__ == '__main__':
     # arxiv_init()
     model, tokenizer = init_model_and_tokenizer()
+
     # start_time = time.time()
     # print("begin rewrite")
     # rewrite_objs(model, tokenizer)
     # end_time = time.time()
+
     # print("end rewrite: " + str(end_time - start_time))
     # print("begin replace")
     # rewrite_objs(model, tokenizer)
     # end_time = time.time()
+
     # print("end replace: " + str(end_time - start_time))
-    print("begin continue")
-    start_time = time.time()
-    generate_chat_objs(model, tokenizer, 'continue_1.jsonl' ,continue_content, result_key='continue')
-    end_time = time.time()
-    print("end continue: " + str(end_time - start_time))
-    print("begin academic")
-    start_time = time.time()
-    generate_chat_objs(model, tokenizer, 'academic_1.jsonl' ,academic_content, result_key='academic')
-    end_time = time.time()
-    print("end academic: " + str(end_time - start_time))
-    print("begin summarize")
-    start_time = time.time()
-    generate_chat_objs(model, tokenizer, 'summarize_1.jsonl' ,summarize_content, result_key='summarize')
-    end_time = time.time()
-    print("end summarize: " + str(end_time - start_time))
+    # print("begin continue")
+    # start_time = time.time()
+    # generate_chat_objs(model, tokenizer, 'continue_1.jsonl' ,continue_content, result_key='continue')
+    # end_time = time.time()
+
+    # print("end continue: " + str(end_time - start_time))
+    # print("begin academic")
+    # start_time = time.time()
+    # generate_chat_objs(model, tokenizer, 'academic_1.jsonl' ,academic_content, result_key='academic')
+    # end_time = time.time()
+
+    # print("end academic: " + str(end_time - start_time))
+    # print("begin summarize")
+    # start_time = time.time()
+    # generate_chat_objs(model, tokenizer, 'summarize_1.jsonl' ,summarize_content, result_key='summarize')
+    # end_time = time.time()
+
+    # print("end summarize: " + str(end_time - start_time))
     # print(chat(model, tokenizer, "Please rewrite the following paragraphs to keep the original meaning intact and prohibit the output of irrelevant content: As the Web matures, an increasing number of dynamic information sources and services come online. Unlike static Web pages, these resources generate their contents dynamically in response to a query. They can be HTML-based, searching the site via an HTML form, or be a Web service. Proliferation of such resources has led to a number of novel applications, including Web-based mashups, such as Google maps and Yahoo pipes, information integration"))
+
+    # generate_class_chat_data(model, tokenizer)
+    generate_class_chat_data_2(model, tokenizer)

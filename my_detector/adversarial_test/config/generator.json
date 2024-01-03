@@ -1,0 +1,26 @@
+{
+  "candidate_labels": [
+    "medicine",
+    "law",
+    "computer science",
+    "finance",
+    "pedagogy",
+    "biology",
+    "psychology",
+    "political",
+    "sports",
+    "chemistry"
+  ],
+  "prompt_templates": [
+    "please randomly write in the field of {}. about 100 words",
+    "please pretend to answer a question in the field of {}. about 100 words",
+    "please pretend to make up a question in the field of {}. about 100 words",
+    "please pretend to make up a story in the field of {}. about 100 words",
+    "please pretend to write a news in the field of {}. about 100 words",
+    "please pretend to write a essay in the field of {}. about 100 words",
+    "please pretend to write a paper in the field of {}. about 100 words",
+    "please pretend to write a human info in the field of {}. about 100 words",
+    "please pretend to write a theory in the field of {}. about 100 words",
+    "please pretend to write a theory in the field of {}. about 100 words"
+  ]
+}
