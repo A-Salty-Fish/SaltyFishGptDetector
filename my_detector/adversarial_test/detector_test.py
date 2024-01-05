@@ -87,6 +87,7 @@ def test_accurate(model, tokenizer, train_name, test_name, test_file):
             outputs = model(**inputs)
             pred_labels = outputs.logits.cpu().argmax(-1).numpy()
             pred_label = pred_labels[0]
+            # print(len(pred_labels))
 
             if raw_label == 0:
                 human_total += 1
@@ -123,6 +124,7 @@ if __name__ == '__main__':
     #   'human_acc': 0.9888991674375578, 'ai_acc': 0.9972247918593895},
     #  {'train_name': 'medicine', 'test_name': 'wiki_csai', 'total_acc': 0.5284327323162274,
     #   'human_acc': 0.0638002773925104, 'ai_acc': 0.9930651872399445}]
+
 
     detector_config = load_detector_config('./tmp/train_1/', 'detector.json')
     base_test_model_config = load_test_base_model_config()

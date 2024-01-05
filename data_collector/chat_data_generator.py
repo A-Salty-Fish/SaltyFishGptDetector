@@ -1,6 +1,7 @@
 import json
 import time
 
+from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 device = "cuda"  # the device to load the model onto
@@ -71,7 +72,7 @@ def rewrite_objs(model, tokenizer):
     json_objs = []
     with open('./row_data/arxiv_paras/7.jsonl', 'r', encoding='utf-8') as f7, open('./row_data/arxiv_paras/8.jsonl',
                                                                                    'r', encoding='utf-8') as f8, open(
-            './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
+        './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
         with open('./rewrite_1.jsonl', 'a', encoding='utf-8') as out_f:
             for line in f7:
                 try:
@@ -103,7 +104,7 @@ def replace_objs(model, tokenizer):
     json_objs = []
     with open('./row_data/arxiv_paras/7.jsonl', 'r', encoding='utf-8') as f7, open('./row_data/arxiv_paras/8.jsonl',
                                                                                    'r', encoding='utf-8') as f8, open(
-            './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
+        './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
         with open('./replace_1.jsonl', 'a', encoding='utf-8') as out_f:
             for line in f7:
                 try:
@@ -187,7 +188,7 @@ def arxiv_init():
     json_objs = []
     with open('./row_data/arxiv_paras/7.jsonl', 'r', encoding='utf-8') as f7, open('./row_data/arxiv_paras/8.jsonl',
                                                                                    'r', encoding='utf-8') as f8, open(
-            './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
+        './row_data/arxiv_paras/9.jsonl', 'r', encoding='utf-8') as f9:
         with open('./init_1.jsonl', 'a', encoding='utf-8') as out_f:
             for line in f7:
                 try:
@@ -222,8 +223,8 @@ def generate_class_chat_data(model, tokenizer):
                         "pedagogy",
                         "biology",
                         "psychology",
-                        "political" ,
-                        "sports" ,
+                        "political",
+                        "sports",
                         "chemistry"
                         ]
     prompt_templates = [
@@ -262,8 +263,8 @@ def generate_class_chat_data_2(model, tokenizer):
                         "pedagogy",
                         "biology",
                         "psychology",
-                        "political" ,
-                        "sports" ,
+                        "political",
+                        "sports",
                         "chemistry"
                         ]
     prompt_templates = [
@@ -292,6 +293,7 @@ def generate_class_chat_data_2(model, tokenizer):
                     json_obj['class_label'] = candidate_label
                     json_obj['prompt_template'] = prompt_template
                     out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+
 
 if __name__ == '__main__':
     # arxiv_init()
@@ -329,4 +331,47 @@ if __name__ == '__main__':
     # print(chat(model, tokenizer, "Please rewrite the following paragraphs to keep the original meaning intact and prohibit the output of irrelevant content: As the Web matures, an increasing number of dynamic information sources and services come online. Unlike static Web pages, these resources generate their contents dynamically in response to a query. They can be HTML-based, searching the site via an HTML form, or be a Web service. Proliferation of such resources has led to a number of novel applications, including Web-based mashups, such as Google maps and Yahoo pipes, information integration"))
 
     # generate_class_chat_data(model, tokenizer)
-    generate_class_chat_data_2(model, tokenizer)
+    # generate_class_chat_data_2(model, tokenizer)
+    # index = 1
+    # for file_name in ['finance', 'medicine', 'open_qa', 'wiki_csai']:
+    #     print(file_name)
+    #     with open('./test_data/hc3_english/' + file_name + '.jsonl', 'r', encoding='utf-8') as in_f, open('./' + file_name + '_mix.jsonl', 'w', encoding='utf-8') as out_f:
+    #         for line in in_f:
+    #             index+=1
+    #             print('process : %s' % (str(index)), end='\r')
+    #             # print()
+    #             try:
+    #                 json_obj = json.loads(line)
+    #                 question = json_obj['question']
+    #                 new_json_obj = {}
+    #                 for i in range(0, 10):
+    #                     res = chat(model, tokenizer, question)
+    #                     new_json_obj['question'] = question
+    #                     new_json_obj['content'] = res
+    #                     new_json_obj['label'] = res
+    #                     out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
+    #             except Exception as e:
+    #                 print(e)
+    dataset = load_dataset("wiki_qa")
+    train_dataset = dataset['train']
+    test_dataset = dataset['test']
+    with open('./wiki_qa_mix.jsonl', 'w', encoding='utf-8') as f:
+        print("train begin")
+        for i in range(0, len(train_dataset)):
+            print('process train : [%s]' % (str(i * 1.00 / len(train_dataset))), end='\r')
+            json_obj = {
+                'question': train_dataset[i]['question'],
+                'human': train_dataset[i]['answer'],
+                'ai': chat(model, tokenizer, train_dataset[i]['question'])
+            }
+            f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+        print("test begin")
+        for i in range(0, len(test_dataset)):
+            print('process test : [%s]' % (str(i * 1.00 / len(test_dataset))), end='\r')
+            json_obj = {
+                'question': test_dataset[i]['question'],
+                'human': test_dataset[i]['answer'],
+                'ai': chat(model, tokenizer, test_dataset[i]['question'])
+            }
+            f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+    pass
