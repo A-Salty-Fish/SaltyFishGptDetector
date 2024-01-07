@@ -1,8 +1,14 @@
 # 各个算法比较
 
+# pip install git+https://github.com/Liadrinz/transformers-unilm
+# pip install transformers
+# 安装torch
+# pip install nltk
+
 import argparse
 import csv
 import datetime
+import json
 import random
 import time
 from functools import partial
@@ -306,6 +312,58 @@ def multi_test(method, test_datasets, test_dataset_paths, test_data_nums, test_f
     return multi_test_result
 
 
+def test_hc3(method, direct_files):
+    print("method test begin:" + method)
+    start_time = datetime.datetime.now()
+    classifier = get_classifier(method)
+    test_results = []
+    for direct_file in direct_files:
+        print(direct_file)
+        tmp_test_datas = []
+        test_datas = {
+            'human': [],
+            'ai': []
+        }
+        with open(direct_file, 'r', encoding='utf-8') as f:
+            i = 0
+            for line in f:
+                i+=1
+                if i > 200:
+                    break
+                json_obj = json.loads(line)
+                tmp_test_datas.append({
+                    "label":0,
+                    "content": json_obj['human_answers'][0]
+                })
+                tmp_test_datas.append({
+                    "label": 1,
+                    "content": json_obj['chatgpt_answers'][0]
+                })
+        test_datas['human'] = [x for x in tmp_test_datas if x['label'] == 0]
+        test_datas['ai'] = [x for x in tmp_test_datas if x['label'] == 1]
+        # 截断过长的数据
+        for i in range(0, len(test_datas['human'])):
+            words = test_datas['human'][i]['content'].split(' ')
+            if len(words) > 500:
+                test_datas['human'][i]['content'] = " ".join(words[0: 500])
+        for i in range(0, len(test_datas['ai'])):
+            words = test_datas['ai'][i]['content'].split(' ')
+            if len(words) > 500:
+                test_datas['ai'][i]['content'] = " ".join(words[0: 500])
+
+        test_result = test_classifier_and_dataset(classifier, test_datas)
+        print(test_result)
+        test_result['method'] = method
+        test_result['file'] = direct_file
+        test_results.append(test_result)
+
+    end_time = datetime.datetime.now()
+    print("end: " + str(end_time - start_time))
+    return test_results
+
+
+
+
 def test_classifier_and_datasets(classifier, data_sets):
     result = []
     for data_set in data_sets:
@@ -385,7 +443,7 @@ if __name__ == '__main__':
     # for method in support_methods:
     #     output_test_result_table(multi_test(method, 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
     #                                         '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
-    #                                             ','), 1000))
+    #                                             ','), 10))
 
 
     # output_test_result_table(multi_test('gltr', 'CHEAT,m4,ghostbuster,hc3_english,hc3_plus_english'.split(','),
@@ -400,11 +458,21 @@ if __name__ == '__main__':
     #                                     '../data_collector/test_data/CHEAT,../data_collector/test_data/m4,../data_collector/test_data/ghostbuster,../data_collector/test_data/hc3_english,../data_collector/test_data/hc3_plus_english'.split(
     #                                         ','), 1000))
 
-    for key in ['rewrite', 'replace', 'continue', 'academic', 'summarize']:
-        print(key + ' begin')
-        result = []
-        for method in support_methods:
-            result.append(multi_test(method, 'arxiv_cs'.split(','),
-                                                '../data_collector/test_data/arxiv_cs'.split(
-                                                    ','), 1000, [key + '_1.jsonl'], [key])[0])
-        output_test_result_table(result)
+    # for key in ['rewrite', 'replace', 'continue', 'academic', 'summarize']:
+    #     print(key + ' begin')
+    #     result = []
+    #     for method in support_methods:
+    #         result.append(multi_test(method, 'arxiv_cs'.split(','),
+    #                                             '../data_collector/test_data/arxiv_cs'.split(
+    #                                                 ','), 1000, [key + '_1.jsonl'], [key])[0])
+    #     output_test_result_table(result)
+
+    for method in support_methods:
+        output_test_result_table(test_hc3(method,
+                                          [
+                                              '../data_collector/test_data/hc3_english/finance.jsonl',
+                                              '../data_collector/test_data/hc3_english/medicine.jsonl',
+                                              '../data_collector/test_data/hc3_english/open_qa.jsonl',
+                                              '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+                                           ]
+                                          ))
