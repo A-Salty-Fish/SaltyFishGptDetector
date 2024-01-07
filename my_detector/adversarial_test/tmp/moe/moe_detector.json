@@ -11,7 +11,7 @@
     "output_dir": "./tmp/moe/",
     "bar": 0.50000
   },
-  "test_file_base": "../tmp/train_1/",
+  "test_file_base": "./tmp/train_1/",
   "test_files": {
     "finance": "../token_test/data/finance.jsonl.test",
     "medicine": "../token_test/data/medicine.jsonl.test",
