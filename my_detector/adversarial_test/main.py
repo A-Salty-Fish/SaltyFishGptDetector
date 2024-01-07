@@ -1,6 +1,40 @@
 import json
 import random
 
+# 测试用，用于生成测试数据
+def prepare_test_utc_datas(labels, target_path, train_rate = 0.2):
+    all_train_datas = []
+    all_test_datas = []
+    with open('./data/label_result', 'r', encoding='utf-8') as f:
+        json_arr = json.load(f)
+        for label in labels:
+            tmp_label_datas = json_arr[label]
+            label_datas = []
+
+            for tmp_label_data in tmp_label_datas:
+                label_datas.append({
+                    "content": tmp_label_data['human'].replace('\n', ''),
+                    "label": 0
+                })
+                label_datas.append({
+                    "content": tmp_label_data['ai'].replace('\n', ''),
+                    "label": 1
+                })
+            train_datas = label_datas[0: int(len(label_datas) * train_rate)]
+            test_datas = label_datas[int(len(label_datas) * train_rate):]
+            all_train_datas += train_datas
+            all_test_datas += test_datas
+            print(label + ":" + str(len(train_datas)) + ":" + str(len(test_datas)))
+            with open(target_path + label + '.train', 'w', encoding='utf-8') as train_f:
+                train_f.write(json.dumps(train_datas, ensure_ascii=False))
+            with open(target_path + label + '.test', 'w', encoding='utf-8') as test_f:
+                test_f.write(json.dumps(test_datas, ensure_ascii=False))
+        with open(target_path + 'all' + '.train', 'w', encoding='utf-8') as train_f:
+            train_f.write(json.dumps(all_train_datas, ensure_ascii=False))
+        with open(target_path + 'all' + '.test', 'w', encoding='utf-8') as test_f:
+            test_f.write(json.dumps(all_test_datas, ensure_ascii=False))
+        print('all' + ":" + str(len(all_train_datas)) + ":" + str(len(all_test_datas)))
+
 if __name__ == '__main__':
     text_labels = [
         "medicine",
@@ -71,8 +105,10 @@ if __name__ == '__main__':
     # with open('./label_result', 'w', encoding='utf-8') as f_out:
     #     f_out.write(json.dumps(label_contents, ensure_ascii=False))
 
-    with open('./data/label_result', 'r', encoding='utf-8') as f:
-        json_map = json.load(f)
-        for text_label in text_labels:
-            print(text_label)
-            print(len(json_map[text_label]))
+    # with open('./data/label_result', 'r', encoding='utf-8') as f:
+    #     json_map = json.load(f)
+    #     for text_label in text_labels:
+    #         print(text_label)
+    #         print(len(json_map[text_label]))
+
+    prepare_test_utc_datas(labels=text_labels, target_path='./tmp/train_1/')

@@ -2,12 +2,12 @@
   "cur": {
     "train_file": "./tmp/train_1/medicine.jsonl.train.1",
     "test_file": "./tmp/train_1/medicine.jsonl.test",
-    "eval_steps": 100,
-    "save_steps": 100,
-    "num_train_epochs": 12,
+    "eval_steps": 200,
+    "save_steps": 200,
+    "num_train_epochs": 10,
     "save_total_limit": 2,
     "evaluation_strategy": "steps",
-    "output_dir": "./tmp/train_1"
+    "output_dir": "./tmp/train_1/"
   },
   "test_files": {
     "finance": "../token_test/data/finance.jsonl.test",
