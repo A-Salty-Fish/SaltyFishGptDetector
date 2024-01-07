@@ -20,6 +20,11 @@ def load_test_base_model_config(base_path='./config/', config_name='base_model.j
     with open(base_path + config_name, 'r', encoding='utf-8') as text_labels_file:
         return json.load(text_labels_file)['test']
 
+def load_utc_base_model_config(base_path='./config/', config_name='base_model.json'):
+    with open(base_path + config_name, 'r', encoding='utf-8') as text_labels_file:
+        return json.load(text_labels_file)['utc']
+
+
 def init_utc_pipe(utc_base_model_config):
     start_time = time.time()
 
