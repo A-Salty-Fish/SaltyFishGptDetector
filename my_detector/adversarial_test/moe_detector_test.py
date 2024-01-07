@@ -202,7 +202,7 @@ def eval_moe_files(moe_map, test_files_map):
             }
             print(result)
             results.append(results)
-        return results
+    return results
 
 
 def eval_all(test_files_map):
@@ -253,7 +253,7 @@ def eval_all(test_files_map):
             }
             print(result)
             results.append(results)
-        return results
+    return results
 
 def output_test_result_table(results, output_file_name=None):
     if output_file_name is None:
