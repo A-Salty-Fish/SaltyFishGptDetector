@@ -189,19 +189,19 @@ def eval_moe_files(moe_map, test_files_map):
                     if pred_label == 1:
                         gpt_correct += 1
 
-                end_time = time.time()
-                print("test " + label + " successful: " + str(end_time - start_time))
-                result = {
-                    "train_label": label,
-                    'test_label': label,
-                    "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
-                    "human_acc": (1.0 * human_correct / human_total),
-                    "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
-                    "run_time": end_time -start_time,
-                    "file": file
-                }
-                print(result)
-                results.append(results)
+            end_time = time.time()
+            print("test " + label + " successful: " + str(end_time - start_time))
+            result = {
+                "train_label": label,
+                'test_label': label,
+                "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+                "human_acc": (1.0 * human_correct / human_total),
+                "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
+                "run_time": end_time -start_time,
+                "file": file
+            }
+            print(result)
+            results.append(results)
         return results
 
 
@@ -240,19 +240,19 @@ def eval_all(test_files_map):
                     if pred_label == 1:
                         gpt_correct += 1
 
-                end_time = time.time()
-                print("test " + label + " successful: " + str(end_time - start_time))
-                result = {
-                    "train_label": 'all',
-                    'test_label': label,
-                    "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
-                    "human_acc": (1.0 * human_correct / human_total),
-                    "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
-                    "run_time": end_time -start_time,
-                    "file": file
-                }
-                print(result)
-                results.append(results)
+            end_time = time.time()
+            print("test " + label + " successful: " + str(end_time - start_time))
+            result = {
+                "train_label": 'all',
+                'test_label': label,
+                "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+                "human_acc": (1.0 * human_correct / human_total),
+                "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
+                "run_time": end_time -start_time,
+                "file": file
+            }
+            print(result)
+            results.append(results)
         return results
 
 def output_test_result_table(results, output_file_name=None):
