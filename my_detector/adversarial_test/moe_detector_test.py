@@ -47,12 +47,12 @@ def utc_classify(classifier, labels, text):
     return result
 
 
-def init_single_model_and_tokenizer(model_path, base_test_model_config):
+def init_single_model_and_tokenizer(model_path, base_test_model_config, label = ''):
     start_time = time.time()
 
     tokenizer=AutoTokenizer.from_pretrained(base_test_model_config['tokenizer_name'], model_max_length=base_test_model_config['max_length'])
     max_step = -1
-    output_dir = model_path
+    output_dir = model_path + label
     for file in os.listdir(output_dir):
         max_step = max(max_step, int(file.split('-')[1]))
 
@@ -71,7 +71,7 @@ def init_moe(text_labels, moe_base_path, base_test_model_config):
     start_time = time.time()
     moe_map = {}
     for text_label in text_labels:
-        model, tokenizer = init_single_model_and_tokenizer(model_path=moe_base_path, base_test_model_config=base_test_model_config)
+        model, tokenizer = init_single_model_and_tokenizer(model_path=moe_base_path, base_test_model_config=base_test_model_config, label=text_label)
         moe_map[text_label] = model, tokenizer
     end_time = time.time()
     print("load moe models successful: " + str(end_time - start_time))
@@ -150,5 +150,60 @@ def eval_moe(text_labels, moe_detector_config, utc_base_model_config, base_test_
 
     print("test all" + " successful: " + str(end_time - start_time))
     return all_result
+
+
+def eval_moe_files(moe_map, test_files_map):
+    results = []
+    for label in moe_map:
+        human_correct = 0
+        human_total = 0
+        gpt_correct = 0
+        gpt_total = 0
+
+        file = test_files_map[label]
+        model, tokenizer = moe_map[label]
+
+        start_time = time.time()
+        with open(file, 'r', encoding='utf-8') as f:
+            json_arr = json.load(f)
+            for i in range(0, len(json_arr)):
+                json_obj = json_arr[i]
+                print('test process : %s [%d/%d]' % (str(i * 100 / len(json_arr)) + '%', i, len(json_arr)),
+                      end='\r')
+                raw_input = json_obj['content']
+                raw_label = json_obj['label']
+                inputs = tokenizer([raw_input], padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+                outputs = model(**inputs)
+                pred_labels = outputs.logits.cpu().argmax(-1).numpy()
+                pred_label = pred_labels[0]
+                # print(len(pred_labels))
+
+                if raw_label == 0:
+                    human_total += 1
+                    if pred_label == 0:
+                        human_correct += 1
+                else:
+                    gpt_total += 1
+                    if pred_label == 1:
+                        gpt_correct += 1
+
+                end_time = time.time()
+                print("test " + label + " successful: " + str(end_time - start_time))
+                result = {
+                    "label": label,
+                    "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+                    "human_acc": (1.0 * human_correct / human_total),
+                    "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
+                    "run_time": end_time -start_time,
+                    "file": file
+                }
+                print(result)
+                results.append(results)
+        return results
+
+if __name__ == '__main__':
+    moe_config = load_moe_detector_config()
+
+    moe_map = init_moe(load_text_labels_config(), moe_config['cur']['output_dir'], load_test_base_model_config())
 
 
