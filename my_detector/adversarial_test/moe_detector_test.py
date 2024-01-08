@@ -97,7 +97,7 @@ def classify_by_moe(moe_map, utc_pipe, labels, text, top_k = 1, bar = 0.5000):
     pred_sum = 0
     for moe_result in moe_results:
         score_sum += moe_result[1]
-        pred_sum += moe_result[1] * moe_results[2]
+        pred_sum += moe_result[1] * moe_result[2]
 
     if pred_sum / score_sum <= bar:
         return 0
@@ -205,6 +205,125 @@ def eval_moe_files(moe_map, test_files_map):
     return results
 
 
+def load_all_hc3():
+    result = []
+    hc3_english_path = '../../data_collector/test_data/hc3_english'
+    for file in os.listdir(hc3_english_path):
+        if file.find('.jsonl') == -1:
+            continue
+        i = 0
+        with open(hc3_english_path + '/' + file, 'r', encoding='utf-8') as f:
+            for line in f:
+                i+=1
+                if i > 500:
+                    break
+                json_obj = json.loads(line)
+                human_answer = json_obj['human_answers'][0].replace('\n', '')
+                chatgpt_answer = json_obj['chatgpt_answers'][0].replace('\n', '')
+                result.append({
+                    'content': chatgpt_answer,
+                    'label': 1
+                })
+                result.append({
+                    'content': human_answer,
+                    'label': 0
+                })
+    return result
+
+
+def moe_eval_all_hc3():
+    json_arr = load_all_hc3()
+
+    moe_config = load_moe_detector_config()
+    base_file = moe_config['test_file_base']
+    moe_map = init_moe(load_text_labels_config(), moe_config['cur']['output_dir'], load_test_base_model_config())
+    utc_pipe = init_utc_pipe(load_utc_base_model_config())
+
+    start_time = time.time()
+    human_correct = 0
+    human_total = 0
+    gpt_correct = 0
+    gpt_total = 0
+    labels = load_text_labels_config()
+
+    for i in range(0, len(json_arr)):
+        json_obj = json_arr[i]
+        print('test process : %s [%d/%d]' % (str(i * 100 / len(json_arr)) + '%', i, len(json_arr)),
+              end='\r')
+        raw_input = json_obj['content']
+        raw_label = json_obj['label']
+
+        pred_label = classify_by_moe(moe_map, utc_pipe, labels, raw_input, 3, 0.5000)
+        # print(len(pred_labels))
+
+        if raw_label == 0:
+            human_total += 1
+            if pred_label == 0:
+                human_correct += 1
+        else:
+            gpt_total += 1
+            if pred_label == 1:
+                gpt_correct += 1
+
+    end_time = time.time()
+    print("test " + "hc3" + " successful: " + str(end_time - start_time))
+    result = {
+        "train_label": 'all',
+        'test_label': "hc3",
+        "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+        "human_acc": (1.0 * human_correct / human_total),
+        "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
+        "run_time": end_time - start_time,
+        "file": "hc3"
+    }
+    print(result)
+    return result
+
+
+def eval_all_hc3():
+    json_arr = load_all_hc3()
+    model, tokenizer = init_single_model_and_tokenizer(load_moe_detector_config()['cur']['output_dir'],
+                                                       load_test_base_model_config(), 'all')
+    start_time = time.time()
+    human_correct = 0
+    human_total = 0
+    gpt_correct = 0
+    gpt_total = 0
+    for i in range(0, len(json_arr)):
+        json_obj = json_arr[i]
+        print('test process : %s [%d/%d]' % (str(i * 100 / len(json_arr)) + '%', i, len(json_arr)),
+              end='\r')
+        raw_input = json_obj['content']
+        raw_label = json_obj['label']
+        inputs = tokenizer([raw_input], padding=True, truncation=True, return_tensors="pt").to(DEVICE)
+        outputs = model(**inputs)
+        pred_labels = outputs.logits.cpu().argmax(-1).numpy()
+        pred_label = pred_labels[0]
+        # print(len(pred_labels))
+
+        if raw_label == 0:
+            human_total += 1
+            if pred_label == 0:
+                human_correct += 1
+        else:
+            gpt_total += 1
+            if pred_label == 1:
+                gpt_correct += 1
+
+    end_time = time.time()
+    print("test " + "hc3" + " successful: " + str(end_time - start_time))
+    result = {
+        "train_label": 'all',
+        'test_label': "hc3",
+        "total_acc": (1.0 * (human_correct + gpt_correct) / (human_total + gpt_total)),
+        "human_acc": (1.0 * human_correct / human_total),
+        "ai_acc": (1.0 * (gpt_correct) / (gpt_total)),
+        "run_time": end_time - start_time,
+        "file": "hc3"
+    }
+    print(result)
+    return result
+
 def eval_all(test_files_map):
     results = []
     model, tokenizer = init_single_model_and_tokenizer(load_moe_detector_config()['cur']['output_dir'],
@@ -217,6 +336,8 @@ def eval_all(test_files_map):
         gpt_correct = 0
         gpt_total = 0
         file = test_files_map[label]
+        if file is None:
+            continue
         with open(file, 'r', encoding='utf-8') as f:
             json_arr = json.load(f)
             for i in range(0, len(json_arr)):
@@ -271,20 +392,26 @@ def output_test_result_table(results, output_file_name=None):
         writer.writerows(results)
 
 
+
 if __name__ == '__main__':
     moe_config = load_moe_detector_config()
     base_file = moe_config['test_file_base']
-    moe_map = init_moe(load_text_labels_config(), moe_config['cur']['output_dir'], load_test_base_model_config())
-    file_map = {}
-    for label in moe_map:
-        file_map[label] = base_file + label + '.test'
-    results = eval_moe_files(moe_map, file_map)
-    print(results)
-    output_test_result_table(results)
+    # moe_map = init_moe(load_text_labels_config(), moe_config['cur']['output_dir'], load_test_base_model_config())
+    # file_map = {}
+    # for label in moe_map:
+    #     file_map[label] = base_file + label + '.test'
+    # results = eval_moe_files(moe_map, file_map)
+    # print(results)
+    # output_test_result_table(results)
 
-    print("begin all")
-    output_test_result_table(eval_all(file_map))
-
+    # eval_all_hc3()
+    # {'train_label': 'all', 'test_label': 'hc3', 'total_acc': 0.62775,
+    #  'human                                                                               _acc': 0.2715,
+    #  'ai_acc': 0.984, 'run_time': 52.82380247116089,
+    #  'file': '                                                                               hc3'}
+    moe_eval_all_hc3()
+    # {'train_label': 'all', 'test_label': 'hc3', 'total_acc': 0.63925, 'human_acc': 0.2865, 'ai_acc': 0.992,
+    #  'run_time': 6253.255467891693, 'file': 'hc3'}
 
 
 
