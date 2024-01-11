@@ -285,14 +285,40 @@ def generate_class_chat_data_2(model, tokenizer):
             for i in range(0, 100):
                 # print(i)
                 for prompt_template in prompt_templates:
-                    print(candidate_label + ":" + prompt_template + ":" + str(i))
-                    chat_res = chat(model, tokenizer, prompt_template.format(candidate_label))
-                    json_obj = {}
-                    json_obj['label'] = 1
-                    json_obj['content'] = chat_res
-                    json_obj['class_label'] = candidate_label
-                    json_obj['prompt_template'] = prompt_template
-                    out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+                    try:
+                        print(candidate_label + ":" + prompt_template + ":" + str(i))
+                        chat_res = chat(model, tokenizer, prompt_template.format(candidate_label))
+                        json_obj = {}
+                        json_obj['label'] = 1
+                        json_obj['content'] = chat_res
+                        json_obj['class_label'] = candidate_label
+                        json_obj['prompt_template'] = prompt_template
+                        out_f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+                    except Exception as e:
+                        print(e)
+
+
+def generate_hc3_data(model, tokenizer):
+    hc3_file_names = ['finance', 'medicine', 'open_qa', 'wiki_csai']
+    for file_name in hc3_file_names:
+        print(file_name)
+        with open('../data_collector/test_data/hc3_english/' + file_name + '.jsonl', 'r', encoding='utf-8') as in_f:
+            with open('./' + file_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
+                i = 0
+                for line in in_f:
+                    i+=1
+                    print(str(i), end='\r')
+                    json_obj = json.loads(line)
+                    question = json_obj['question']
+                    human_answer = json_obj['human_answers'][0]
+                    # ai_answer = json_obj['chatgpt_answers'][0]
+                    new_json_obj = {
+                        'question': question,
+                        'human': human_answer,
+                        'ai': chat(model, tokenizer, question)
+                    }
+                    out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
+
 
 
 if __name__ == '__main__':
@@ -352,26 +378,29 @@ if __name__ == '__main__':
     #                     out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
     #             except Exception as e:
     #                 print(e)
-    dataset = load_dataset("wiki_qa")
-    train_dataset = dataset['train']
-    test_dataset = dataset['test']
-    with open('./wiki_qa_mix.jsonl', 'w', encoding='utf-8') as f:
-        print("train begin")
-        for i in range(0, len(train_dataset)):
-            print('process train : [%s]' % (str(i * 1.00 / len(train_dataset))), end='\r')
-            json_obj = {
-                'question': train_dataset[i]['question'],
-                'human': train_dataset[i]['answer'],
-                'ai': chat(model, tokenizer, train_dataset[i]['question'])
-            }
-            f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
-        print("test begin")
-        for i in range(0, len(test_dataset)):
-            print('process test : [%s]' % (str(i * 1.00 / len(test_dataset))), end='\r')
-            json_obj = {
-                'question': test_dataset[i]['question'],
-                'human': test_dataset[i]['answer'],
-                'ai': chat(model, tokenizer, test_dataset[i]['question'])
-            }
-            f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+    # dataset = load_dataset("wiki_qa")
+    # train_dataset = dataset['train']
+    # test_dataset = dataset['test']
+    # with open('./wiki_qa_mix.jsonl', 'w', encoding='utf-8') as f:
+    #     print("train begin")
+    #     for i in range(0, len(train_dataset)):
+    #         print('process train : [%s]' % (str(i * 1.00 / len(train_dataset))), end='\r')
+    #         json_obj = {
+    #             'question': train_dataset[i]['question'],
+    #             'human': train_dataset[i]['answer'],
+    #             'ai': chat(model, tokenizer, train_dataset[i]['question'])
+    #         }
+    #         f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+    #     print("test begin")
+    #     for i in range(0, len(test_dataset)):
+    #         print('process test : [%s]' % (str(i * 1.00 / len(test_dataset))), end='\r')
+    #         json_obj = {
+    #             'question': test_dataset[i]['question'],
+    #             'human': test_dataset[i]['answer'],
+    #             'ai': chat(model, tokenizer, test_dataset[i]['question'])
+    #         }
+    #         f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
+
+    generate_hc3_data(model, tokenizer)
+
     pass
