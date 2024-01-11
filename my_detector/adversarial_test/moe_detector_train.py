@@ -163,6 +163,34 @@ def prepare_data_utc(labels, classifier, top_k=3):
     with open('./label_result', 'w', encoding='utf-8') as f_out:
         f_out.write(json.dumps(label_contents, ensure_ascii=False))
 
+
+def prepare_hc3_data_utc(labels, classifier, top_k=3):
+    label_contents = {}
+    for label in labels:
+        label_contents[label] = []
+    i = 0
+    hc3_file_names = ['finance', 'medicine', 'open_qa', 'wiki_csai']
+    for hc3_file_name in hc3_file_names:
+        with open('./data/' + hc3_file_name +'.mix.jsonl', 'r', encoding='utf-8') as f:
+            for line in f:
+                i += 1
+                print('process : %s' % (str(i)), end='\r')
+                json_obj = json.loads(line)
+                # todo ai only
+                ai_content = json_obj['ai'].replace('\n', '')
+                try:
+                    utc_result = utc_classify(classifier, labels, ai_content)
+                    for ii in range(0, top_k):
+                        label_contents[utc_result[ii][0]].append(json_obj)
+                except Exception as e:
+                    print(e)
+                    print(ai_content)
+                    print(utc_result)
+
+    with open('./hc3_mix_label_result', 'w', encoding='utf-8') as f_out:
+        f_out.write(json.dumps(label_contents, ensure_ascii=False))
+
+
 # 测试用，用于生成测试数据
 def prepare_test_utc_datas(labels, target_path, train_rate = 0.2):
     all_train_datas = []
@@ -196,21 +224,23 @@ def prepare_test_utc_datas(labels, target_path, train_rate = 0.2):
 
 if __name__ == '__main__':
     # prepare_data_utc(labels=load_text_labels_config(), classifier=init_utc_pipe(load_utc_base_model_config()))
-    for label in load_text_labels_config():
-        base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
-        train_single(
-            label,
-            base_model,
-            base_tokenizer,
-            './tmp/train_1/',
-            load_moe_detector_config()
-        )
-    base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
-    train_single(
-        'all',
-        base_model,
-        base_tokenizer,
-        './tmp/train_1/',
-        load_moe_detector_config()
-    )
+    prepare_hc3_data_utc(labels=load_text_labels_config(), classifier=init_utc_pipe(load_utc_base_model_config()))
+    # for label in load_text_labels_config():
+    #     base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
+    #     train_single(
+    #         label,
+    #         base_model,
+    #         base_tokenizer,
+    #         './tmp/train_1/',
+    #         load_moe_detector_config()
+    #     )
+    # base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
+    # train_single(
+    #     'all',
+    #     base_model,
+    #     base_tokenizer,
+    #     './tmp/train_1/',
+    #     load_moe_detector_config()
+    # )
+
     pass
