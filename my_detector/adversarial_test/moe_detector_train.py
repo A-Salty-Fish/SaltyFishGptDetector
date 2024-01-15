@@ -222,25 +222,60 @@ def prepare_test_utc_datas(labels, target_path, train_rate = 0.2):
         with open(target_path + 'all' + '.test', 'w', encoding='utf-8') as test_f:
             test_f.write(json.dumps(all_test_datas, ensure_ascii=False))
 
+
+def prepare_train_and_test_label_datas(labels, row_label_files , target_path, train_rate=0.2):
+    all_label_datas = {}
+    for label in labels:
+        all_label_datas[label] = []
+    for row_label_file in row_label_files:
+        with open(row_label_file, 'r', encoding='utf-8') as f:
+            json_map = json.load(f)
+            for label in labels:
+                all_label_datas[label] += json_map[label]
+    all_train_datas = []
+    all_test_datas = []
+    for label in labels:
+        label_datas = all_label_datas[label]
+        train_datas = label_datas[0: int(len(label_datas) * train_rate)]
+        test_datas = label_datas[int(len(label_datas) * train_rate):]
+        all_train_datas += train_datas
+        all_test_datas += test_datas
+    #     print(f"{label}: {len(train_datas)}, {len(test_datas)}")
+    # print(f"all: {len(all_train_datas)}, {len(all_test_datas)}")
+        with open(target_path + label + '.train', 'w', encoding='utf-8') as train_f:
+            train_f.write(json.dumps(train_datas, ensure_ascii=False))
+        with open(target_path + label + '.test', 'w', encoding='utf-8') as test_f:
+            test_f.write(json.dumps(test_datas, ensure_ascii=False))
+    with open(target_path + 'all' + '.train', 'w', encoding='utf-8') as train_f:
+        train_f.write(json.dumps(all_train_datas, ensure_ascii=False))
+    with open(target_path + 'all' + '.test', 'w', encoding='utf-8') as test_f:
+        test_f.write(json.dumps(all_test_datas, ensure_ascii=False))
+
 if __name__ == '__main__':
     # prepare_data_utc(labels=load_text_labels_config(), classifier=init_utc_pipe(load_utc_base_model_config()))
-    prepare_hc3_data_utc(labels=load_text_labels_config(), classifier=init_utc_pipe(load_utc_base_model_config()))
-    # for label in load_text_labels_config():
-    #     base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
-    #     train_single(
-    #         label,
-    #         base_model,
-    #         base_tokenizer,
-    #         './tmp/train_1/',
-    #         load_moe_detector_config()
-    #     )
-    # base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
-    # train_single(
-    #     'all',
-    #     base_model,
-    #     base_tokenizer,
-    #     './tmp/train_1/',
-    #     load_moe_detector_config()
+    # prepare_hc3_data_utc(labels=load_text_labels_config(), classifier=init_utc_pipe(load_utc_base_model_config()))
+    # prepare_train_and_test_label_datas(
+    #     labels=load_text_labels_config(),
+    #     row_label_files= ['./data/label_wiki_qa'],
+    #     target_path='./tmp/moe_1/'
     # )
+
+    for label in load_text_labels_config():
+        base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
+        train_single(
+            label,
+            base_model,
+            base_tokenizer,
+            './tmp/moe_1/',
+            load_moe_detector_config(base_path='./tmp/moe_1/', file_name='moe_detector_wiki_qa_hc3_all_human_token_1.json')
+        )
+    base_model, base_tokenizer = init_base_model_and_tokenizer(load_train_base_model_config())
+    train_single(
+        'all',
+        base_model,
+        base_tokenizer,
+        './tmp/moe_1/',
+        load_moe_detector_config(base_path='./tmp/moe_1/', file_name='moe_detector_wiki_qa_hc3_all_human_token_1.json')
+    )
 
     pass
