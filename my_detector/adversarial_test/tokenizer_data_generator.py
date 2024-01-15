@@ -95,6 +95,34 @@ def tokenize_hc3_data():
         f_out.write(json.dumps(results, ensure_ascii=False))
 
 
+def tokenize_wiki_qa_mix_data():
+    results = []
+    i = 0
+    human_contents = []
+    with open('./data/wiki_qa_mix.jsonl', 'r', encoding='utf-8') as f:
+        for line in f:
+
+            json_obj = json.loads(line)
+            # todo ai only
+            human_content = json_obj['human'].replace('\n', '')
+            human_contents.append(human_content)
+    for human_content in human_contents:
+        try:
+            i += 1
+            print('total : %s' % (str(i/len(human_contents))), end='\r')
+            fill_results = random_fill_token(human_content, 1, 5)
+            for fill_result in fill_results:
+                results.append({
+                    'label': 0,
+                    'content': fill_result
+                })
+        except Exception as e:
+            print(e)
+
+    with open('./wiki_qa_mix_token_fill_1_result', 'w', encoding='utf-8') as f_out:
+        f_out.write(json.dumps(results, ensure_ascii=False))
+
+
 def output_mask_results(input_name, output_name, total_num=10000):
     print("begin 1")
     i = 0
@@ -146,4 +174,5 @@ if __name__ == "__main__":
     # test_long_sen = 'An overview of text line segmentation methods developed within different projects is  presented in Table 1. The achieved taxonomy consists in six major categories. They are listed  as: projection-based, smearing, grouping, Hough-based, repulsive-attractive network and  stochastic methods. Most of these methods are able to face some image degradations and  writing irregularities specific to historical documents, as shown in the last column of Table 1.  Projection, smearing and Hough-based methods, classically adapted to straight lines and  easier to implement, had to be completed and enriched by local considerations (piecewise  projections, clustering in Hough space, use of a moving window, ascender and descender  skipping), so as to solve some problems including: line proximity, overlapping or even  touching strokes, fluctuating close lines, shape fragmentation occurrences. The stochastic  method (achieved by the Viterbi decision algorithm) is conceptually more robust, but its  implementation requires great care, particularly the initialization phase. As a matter of fact,  text-line images are initially divided into mxn grids (each cell being a node), where the values  of the critical parameters m and n are to be determined according to the estimated average  stroke width in the images. Representing a text line by one or more baselines (RA method,  minima point grouping) must be completed by labeling those pixels not connected to, or  between the extracted baselines. The recurrent nature of the repulsive-attractive method may  induce cascading detecting errors following a unique false or bad line extraction.  Projection and Hough-based methods are suitable for clearly separated lines. Projection-based  methods can cope with few overlapping or touching components, as long text lines smooth  both noise and overlapping effects. Even in more critical cases, classifying the set of blocks  into "one line width" blocks and "several lines width" blocks allows the segmentation process  to get statistical measures so as to segment more surely the "several lines width" blocks. As a  result, the linear separator path may cross overlapping components. However, more accurate  segmentation of the overlapping components can be performed after getting the global or  piecewise straight separator, by looking closely at the so crossed strokes. The stochastic  method naturally avoids crossing overlapping components (if they are not too close): the  resulting non linear paths turn around obstacles. When lines are very close, grouping methods  encounter a lot of conflicting configurations. A wrong decision in an early stage of the  grouping results in errors or incomplete alignments. In case of touching components, making  an accurate segmentation requires additional knowledge (compiled in a dictionary of possible  configurations or represented by logical or fuzzy rules).'
     # print(random_fill_token(test_long_sen, fill_num=1, max_num=5))
     # output_mask_results('medicine_medicine.jsonl.split.acc', 'medicine_masked')
-    tokenize_hc3_data()
+    # tokenize_hc3_data()
+    tokenize_wiki_qa_mix_data()
