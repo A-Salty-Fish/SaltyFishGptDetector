@@ -123,6 +123,25 @@ def tokenize_wiki_qa_mix_data():
         f_out.write(json.dumps(results, ensure_ascii=False))
 
 
+def fix_tokenized_wiki_qa_mix_result():
+    with open('./data/wiki_qa_mix_token_fill_1', 'r' ,encoding='utf-8') as in_f:
+        with open('./data/wiki_qa_mix_token_fill_1_result', 'w', encoding='utf-8') as out_f:
+            json_arr = json.load(in_f)
+            results = []
+            for json_obj in json_arr:
+                try:
+                    results.append(
+                        {
+                            'label': 0,
+                            'content': json_obj['content']['result_text']
+                        }
+                    )
+                except Exception as e:
+                    print(e)
+            out_f.write(json.dumps(results))
+
+
+
 def output_mask_results(input_name, output_name, total_num=10000):
     print("begin 1")
     i = 0
@@ -175,4 +194,5 @@ if __name__ == "__main__":
     # print(random_fill_token(test_long_sen, fill_num=1, max_num=5))
     # output_mask_results('medicine_medicine.jsonl.split.acc', 'medicine_masked')
     # tokenize_hc3_data()
-    tokenize_wiki_qa_mix_data()
+    # tokenize_wiki_qa_mix_data()
+    fix_tokenized_wiki_qa_mix_result()

@@ -68,7 +68,7 @@ def output_utc_datas(classifier, labels, datas, output_file, top_k=3):
     for data in datas:
         try:
             i += 1
-            print('process : [%s] %s' % (str(i / len(datas)) , str(i)), end='\r')
+            print('process : [%s]' % (str(i / len(datas))), end='\r')
             utc_result = utc_classify(classifier, labels, data['content'])
             for ii in range(0, top_k):
                 label_contents[utc_result[ii][0]].append({
@@ -101,6 +101,13 @@ def load_hc3_human_token_fill_1_data():
     results = []
     with open('./data/hc3_mix_token_fill_1', 'r', encoding='utf-8') as f:
         return json.load(f)
+
+
+def load_wiki_qa_mix_token_fill_1_data():
+    results = []
+    with open('./data/wiki_qa_mix_token_fill_1_result', 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 
 def load_hc3_all_data():
     results = []
@@ -160,5 +167,13 @@ if __name__ == '__main__':
     #     load_hc3_human_token_fill_1_data(),
     #     './label_hc3_human_token_fill_1'
     # )
+
+    output_utc_datas(
+        init_utc_pipe(load_utc_base_model_config()),
+        load_text_labels_config(),
+        load_wiki_qa_mix_token_fill_1_data(),
+        './label_wiki_qa_mix_token_fill_1'
+    )
+
 
     pass
