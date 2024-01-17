@@ -306,7 +306,7 @@ def generate_hc3_data(model, tokenizer):
             with open('./' + file_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
                 i = 0
                 for line in in_f:
-                    i+=1
+                    i += 1
                     print(str(i), end='\r')
                     json_obj = json.loads(line)
                     question = json_obj['question']
@@ -319,6 +319,35 @@ def generate_hc3_data(model, tokenizer):
                     }
                     out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
 
+
+def generate_multi_prompt_hc3(model, tokenizer):
+    hc3_file_names = ['finance', 'medicine', 'open_qa', 'wiki_csai']
+    prompts_map = {
+        'rewrite': 'Please rewrite the following content:',
+        'continue': 'Please continue to write the following content:',
+        'easy': 'Please change the following content to make it easier to understand:',
+        'academic': 'Please change the following content to be more academic and professional:',
+        'difficult': 'Please change the following content to make it more difficult to understand:',
+    }
+    for file_name in hc3_file_names:
+        print(file_name)
+        with open('./' + file_name + '.mix.jsonl', 'r', encoding='utf-8') as in_f:
+            for prompt_name in prompts_map:
+                with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
+                    i = 0
+                    for line in in_f:
+                        i += 1
+                        print(str(i), end='\r')
+                        if i > 500:
+                            break
+                        json_obj = json.loads(line)
+                        ai_answer = json_obj['ai']
+                        new_json_obj = {
+                            'question': json_obj['question'],
+                            'human': json_obj['human'],
+                            'ai': chat(model, tokenizer, prompts_map[prompt_name] + ai_answer)
+                        }
+                        out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
 
 
 if __name__ == '__main__':
@@ -401,6 +430,7 @@ if __name__ == '__main__':
     #         }
     #         f.write(json.dumps(json_obj, ensure_ascii=False) + '\n')
 
-    generate_hc3_data(model, tokenizer)
+    # generate_hc3_data(model, tokenizer)
 
+    generate_multi_prompt_hc3(model, tokenizer)
     pass
