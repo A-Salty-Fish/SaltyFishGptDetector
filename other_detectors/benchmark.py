@@ -413,7 +413,15 @@ def test_hc3_mix_multi(method, direct_files):
         with open(direct_file, 'r', encoding='utf-8') as f:
             json_arr = []
             for line in f:
-                json_arr.append(json.loads(line))
+                json_obj = json.loads(line)
+                json_arr.append({
+                    'label': 0,
+                    'content': json_obj['human']
+                })
+                json_arr.append({
+                    'label': 1,
+                    'content': json_obj['ai']
+                })
         random.shuffle(json_arr)
         test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:200]
         test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:200]
@@ -587,8 +595,10 @@ if __name__ == '__main__':
     for domain in multi_domains:
         for prompt in multi_prompts:
             direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
-        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + '.mix.jsonl' )
-    for file in direct_files:
-        with open(file, 'r', encoding='utf-8'):
-            print(str(file))
+        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
+    # for file in direct_files:
+    #     with open(file, 'r', encoding='utf-8'):
+    #         print(str(file))
+    for method in support_methods:
+        output_test_result_table(test_hc3_mix_multi(method, direct_files))
 
