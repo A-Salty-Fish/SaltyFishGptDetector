@@ -399,6 +399,45 @@ def test_moe_file(method, direct_files):
     return test_results
 
 
+def test_hc3_mix_multi(method, direct_files):
+    print("method test begin:" + method)
+    start_time = datetime.datetime.now()
+    classifier = get_classifier(method)
+    test_results = []
+    for direct_file in direct_files:
+        print(direct_file)
+        test_datas = {
+            'human': [],
+            'ai': []
+        }
+        with open(direct_file, 'r', encoding='utf-8') as f:
+            json_arr = []
+            for line in f:
+                json_arr.append(json.loads(line))
+        random.shuffle(json_arr)
+        test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:200]
+        test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:200]
+        # 截断过长的数据
+        for i in range(0, len(test_datas['human'])):
+            words = test_datas['human'][i]['content'].split(' ')
+            if len(words) > 500:
+                test_datas['human'][i]['content'] = " ".join(words[0: 500])
+        for i in range(0, len(test_datas['ai'])):
+            words = test_datas['ai'][i]['content'].split(' ')
+            if len(words) > 500:
+                test_datas['ai'][i]['content'] = " ".join(words[0: 500])
+
+        test_result = test_classifier_and_dataset(classifier, test_datas)
+        print(test_result)
+        test_result['method'] = method
+        test_result['file'] = direct_file
+        test_results.append(test_result)
+
+    end_time = datetime.datetime.now()
+    print("end: " + str(end_time - start_time))
+    return test_results
+
+
 
 def test_classifier_and_datasets(classifier, data_sets):
     result = []
@@ -513,21 +552,43 @@ if __name__ == '__main__':
     #                                        ]
     #                                       ))
 
-    moe_lables = [
-    "medicine",
-    "law",
-    "computer science",
-    "finance",
-    "pedagogy",
-    "biology",
-    "psychology",
-    "political",
-    "sports",
-    "chemistry"
+    # moe_lables = [
+    # "medicine",
+    # "law",
+    # "computer science",
+    # "finance",
+    # "pedagogy",
+    # "biology",
+    # "psychology",
+    # "political",
+    # "sports",
+    # "chemistry"
+    # ]
+    # moe_files = []
+    # for label in moe_lables:
+    #     moe_files.append('../my_detector/adversarial_test/tmp/train_1/' + label + '.test')
+    # for method in support_methods:
+    #     output_test_result_table(test_moe_file(method, moe_files))
+
+    multi_domains = [
+        'finance',
+        'medicine',
+        'open_qa',
+        'wiki_csai'
     ]
-    moe_files = []
-    for label in moe_lables:
-        moe_files.append('../my_detector/adversarial_test/tmp/train_1/' + label + '.test')
-    for method in support_methods:
-        output_test_result_table(test_moe_file(method, moe_files))
+    multi_prompts = [
+        'academic',
+        'continue',
+        'difficult',
+        'easy',
+        'rewrite'
+    ]
+    direct_files = []
+    for domain in multi_domains:
+        for prompt in multi_prompts:
+            direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
+        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + '.mix.jsonl' )
+    for file in direct_files:
+        with open(file, 'r', encoding='utf-8'):
+            print(str(file))
 
