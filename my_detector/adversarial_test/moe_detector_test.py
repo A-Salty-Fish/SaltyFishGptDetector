@@ -231,12 +231,12 @@ def load_all_hc3():
     return result
 
 
-def moe_eval_all_hc3():
+def moe_eval_all_hc3(moe_detector_config):
     json_arr = load_all_hc3()
 
-    moe_config = load_moe_detector_config()
+    # moe_config = load_moe_detector_config()
     base_file = moe_config['test_file_base']
-    moe_map = init_moe(load_text_labels_config(), moe_config['cur']['output_dir'], load_test_base_model_config())
+    moe_map = init_moe(load_text_labels_config(), moe_detector_config['cur']['output_dir'], load_test_base_model_config())
     utc_pipe = init_utc_pipe(load_utc_base_model_config())
 
     start_time = time.time()
@@ -280,9 +280,9 @@ def moe_eval_all_hc3():
     return result
 
 
-def eval_all_hc3():
+def eval_all_hc3(moe_detector_config):
     json_arr = load_all_hc3()
-    model, tokenizer = init_single_model_and_tokenizer(load_moe_detector_config()['cur']['output_dir'],
+    model, tokenizer = init_single_model_and_tokenizer(moe_detector_config['cur']['output_dir'],
                                                        load_test_base_model_config(), 'all')
     start_time = time.time()
     human_correct = 0
@@ -409,10 +409,13 @@ if __name__ == '__main__':
     #  'human                                                                               _acc': 0.2715,
     #  'ai_acc': 0.984, 'run_time': 52.82380247116089,
     #  'file': '                                                                               hc3'}
-    moe_eval_all_hc3()
+    # moe_eval_all_hc3()
     # {'train_label': 'all', 'test_label': 'hc3', 'total_acc': 0.63925, 'human_acc': 0.2865, 'ai_acc': 0.992,
     #  'run_time': 6253.255467891693, 'file': 'hc3'}
 
+    eval_all_hc3(moe_detector_config=load_moe_detector_config('./tmp/moe_1/', 'moe_detector_wiki_qa_hc3_all_human_token_1.json'))
+
+    moe_eval_all_hc3(moe_detector_config=load_moe_detector_config('./tmp/moe_1/', 'moe_detector_wiki_qa_hc3_all_human_token_1.json'))
 
 
 
