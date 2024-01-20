@@ -247,6 +247,7 @@ from transformers import RobertaTokenizer, RobertaModel
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 model = RobertaModel.from_pretrained('roberta-base')
+save_dict = 'roberta_result'
 
 #model_name = "roberta-large"
 
@@ -283,12 +284,12 @@ epsilon = 0.001
 # 首先，将这些特征合并成一个文本字符串。
 # 在以下示例中，我将 'Age', 'workclass', 'education', 'occupation', 'race', 'gender' 这些特征合并成一个文本字符串
 
-def combine_features_raw(row):
-    return f"{row['Age']} {row['workclass']} {row['education']} {row['occupation']} {row['race']} {row['gender']}"
-
-
-def combine_features(row):
-    return f"Age: {row['Age']} Workclass: {row['workclass']} Education: {row['education']} Occupation: {row['occupation']} Race: {row['race']} Gender: {row['gender']} "
+# def combine_features_raw(row):
+#     return f"{row['Age']} {row['workclass']} {row['education']} {row['occupation']} {row['race']} {row['gender']}"
+#
+#
+# def combine_features(row):
+#     return f"Age: {row['Age']} Workclass: {row['workclass']} Education: {row['education']} Occupation: {row['occupation']} Race: {row['race']} Gender: {row['gender']} "
 
 
 class AdultDataset(Dataset):
@@ -301,9 +302,8 @@ class AdultDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        text = self.data.iloc[idx]['text']  # 请根据实际情况修改文本字段
-        label = self.data.iloc[idx]['income']  # 请根据实际情况修改标签字段
-        protected = self.data.iloc[idx]['Age']  # 请根据实际情况修改受保护特征字段
+        text = self.data.iloc[idx]['content']  # 请根据实际情况修改文本字段
+        label = self.data.iloc[idx]['label']  # 请根据实际情况修改标签字段
         encoding = self.tokenizer.encode_plus(
             text,
             add_special_tokens=True,
@@ -317,22 +317,25 @@ class AdultDataset(Dataset):
             'input_ids': encoding['input_ids'].flatten(),
             'attention_mask': encoding['attention_mask'].flatten(),
             'label': torch.tensor(label, dtype=torch.long),
-            'protected': torch.tensor(protected, dtype=torch.long)
         }
 
 
-data = pd.read_csv("data/adult.tsv", sep='\t')
-data = data.dropna()
+# data = pd.read_csv("data/adult.tsv", sep='\t')
+# data = data.dropna()
+
+data = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
+# data = data.dropna()
+
 # 计算Age属性的平均值 将任务转化为二分类任务
-age_threshold = data['Age'].median()
+# age_threshold = data['Age'].median()
 
 train_data, val_data = train_test_split(data, test_size=0.2, random_state=42)
 
 # 请注意，BERT模型通常对自然语言文本的理解能力较强，如果特征本身足够表达它们的含义，那么在某些情况下，不包含列名可能也能取得良好的效果。
-train_data['text'] = train_data.apply(combine_features, axis=1)
-train_data['Age'] = (train_data['Age'] >= age_threshold).astype(int)
-val_data['text'] = val_data.apply(combine_features, axis=1)
-val_data['Age'] = (val_data['Age'] >= age_threshold).astype(int)
+# train_data['text'] = train_data.apply(combine_features, axis=1)
+# train_data['Age'] = (train_data['Age'] >= age_threshold).astype(int)
+# val_data['text'] = val_data.apply(combine_features, axis=1)
+# val_data['Age'] = (val_data['Age'] >= age_threshold).astype(int)
 
 train_dataset = AdultDataset(train_data, tokenizer)
 val_dataset = AdultDataset(val_data, tokenizer)
@@ -366,7 +369,7 @@ for epoch in range(epochs):
         inputs = {name: tensor.to(model.device) for name, tensor in batch.items() if
                   name in ['input_ids', 'attention_mask']}
         labels = batch['label'].to(model.device)
-        protected = batch['protected'].to(model.device)
+        # protected = batch['protected'].to(model.device)
 
         # 计算模型的输出
         # 注意 这里的outputs指的就是[CLS]的输出
@@ -421,24 +424,18 @@ for epoch in range(epochs):
         total_correct += correct
         total_examples += labels.size(0)
 
-        # 计算DAO和DEO
-        y_pred = predicted
-        y_real = {'income': labels, 'Age': protected}  # 假设'Age'是敏感特征
-        privileged = 1
-        unprivileged = 0
-
-        batch_DEO = DifferenceEqualOpportunity(y_pred, y_real, 'Age', 'income', privileged, unprivileged, [0, 1])
-        batch_DAO = DifferenceAverageOdds(y_pred, y_real, 'Age', 'income', privileged, unprivileged, [0, 1])
-
-        total_DAO += batch_DAO
-        total_DEO += batch_DEO
+        # # 计算DAO和DEO
+        # y_pred = predicted
+        # y_real = {'label': labels}
+        # privileged = 1
+        # unprivileged = 0
 
         # 打印每个批次的信息
         print(
-            f"Epoch {epoch + 1}/{epochs}, Batch {i + 1}/{len(train_loader)}, Loss: {total_batch_loss.item()}, Accuracy: {correct / labels.size(0)}, DAO: {batch_DAO}, DEO: {batch_DEO}")
+            f"Epoch {epoch + 1}/{epochs}, Batch {i + 1}/{len(train_loader)}, Loss: {total_batch_loss.item()}, Accuracy: {correct / labels.size(0)}")
 
     # 每个epoch结束后，保存模型
-    torch.save(model.state_dict(), f"result/model_epoch_{epoch}.pt")
+    torch.save(model.state_dict(), f"{save_dict}/model_epoch_{epoch}.pt")
 
     # 计算并打印平均损失
     avg_loss = total_loss / len(train_loader)
@@ -450,12 +447,12 @@ for epoch in range(epochs):
     accuracy_list.append(avg_accuracy)
     print(f"Epoch {epoch + 1}/{epochs}, Avg Accuracy: {avg_accuracy}")
 
-    # 计算并打印DAO和DEO
-    avg_DAO = total_DAO / len(train_loader)
-    avg_DEO = total_DEO / len(train_loader)
-    DAO_list.append(avg_DAO)
-    DEO_list.append(avg_DEO)
-    print(f"Epoch {epoch + 1}/{epochs}, Avg DAO: {avg_DAO}, Avg DEO: {avg_DEO}")
+    # # 计算并打印DAO和DEO
+    # avg_DAO = total_DAO / len(train_loader)
+    # avg_DEO = total_DEO / len(train_loader)
+    # DAO_list.append(avg_DAO)
+    # DEO_list.append(avg_DEO)
+    # print(f"Epoch {epoch + 1}/{epochs}, Avg DAO: {avg_DAO}, Avg DEO: {avg_DEO}")
 
 # 创建一个名为 "result" 的文件夹，如果它不存在的话
 if not os.path.exists('result'):
@@ -467,7 +464,7 @@ plt.plot(range(epochs), accuracy_list)
 plt.title('loss over epochs')
 plt.xlabel('Epochs')
 plt.ylabel('loss')
-plt.savefig('result/loss.png')  # Save the figure
+plt.savefig(f'{save_dict}/loss.png')  # Save the figure
 plt.close()
 
 # Accuracy
@@ -476,23 +473,24 @@ plt.plot(range(epochs), accuracy_list)
 plt.title('Accuracy over epochs')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
-plt.savefig('result/accuracy.png')  # Save the figure
+plt.savefig(f'{save_dict}/accuracy.png')  # Save the figure
 plt.close()
 
-# DAO
-plt.figure()
-plt.plot(range(epochs), DAO_list)
-plt.title('DAO over epochs')
-plt.xlabel('Epochs')
-plt.ylabel('DAO')
-plt.savefig('result/DAO.png')  # Save the figure
-plt.close()
+# # DAO
+# plt.figure()
+# plt.plot(range(epochs), DAO_list)
+# plt.title('DAO over epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('DAO')
+# plt.savefig('result/DAO.png')  # Save the figure
+# plt.close()
+#
+# # DEO
+# plt.figure()
+# plt.plot(range(epochs), DEO_list)
+# plt.title('DEO over epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('DEO')
+# plt.savefig('result/DEO.png')  # Save the figure
+# plt.close()
 
-# DEO
-plt.figure()
-plt.plot(range(epochs), DEO_list)
-plt.title('DEO over epochs')
-plt.xlabel('Epochs')
-plt.ylabel('DEO')
-plt.savefig('result/DEO.png')  # Save the figure
-plt.close()
