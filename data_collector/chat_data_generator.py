@@ -1,4 +1,5 @@
 import json
+import random
 import time
 
 from datasets import load_dataset
@@ -332,22 +333,30 @@ def generate_multi_prompt_hc3(model, tokenizer):
     for file_name in hc3_file_names:
         print(file_name)
         with open('./' + file_name + '.mix.jsonl', 'r', encoding='utf-8') as in_f:
+            json_objs = []
+            for line in in_f:
+                json_objs.append(json.loads(line))
             for prompt_name in prompts_map:
-                with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
-                    i = 0
-                    for line in in_f:
-                        i += 1
-                        print(str(i), end='\r')
-                        if i > 500:
-                            break
-                        json_obj = json.loads(line)
-                        ai_answer = json_obj['ai']
-                        new_json_obj = {
-                            'question': json_obj['question'],
-                            'human': json_obj['human'],
-                            'ai': chat(model, tokenizer, prompts_map[prompt_name] + ai_answer)
-                        }
-                        out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
+                count = 0
+                with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'r', encoding='utf-8') as test_out_f:
+                    for line in test_out_f:
+                        count+=1
+                if count != 500:
+                    random.shuffle(json_objs)
+                    print(f"{file_name} {prompt_name} {count}")
+                    with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
+                        for i in range(0, 500):
+                            print(str(i), end='\r')
+                            if i > 500:
+                                break
+                            json_obj = json_objs[i]
+                            ai_answer = json_obj['ai']
+                            new_json_obj = {
+                                'question': json_obj['question'],
+                                'human': json_obj['human'],
+                                'ai': chat(model, tokenizer, prompts_map[prompt_name] + ai_answer)
+                            }
+                            out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
 
 
 if __name__ == '__main__':
