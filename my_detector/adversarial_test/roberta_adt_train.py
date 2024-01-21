@@ -1,3 +1,5 @@
+import time
+
 import torch
 import subprocess
 import torch.nn as nn
@@ -347,12 +349,14 @@ batch_size = 16
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
 
-epochs = 3
+epochs = 10
 # 开始训练模型
 accuracy_list = []
 DAO_list = []
 DEO_list = []
 loss_list = []
+
+total_begin_time = time.time()
 
 for epoch in range(epochs):
     total_loss = 0
@@ -364,7 +368,7 @@ for epoch in range(epochs):
     # 开始训练模式
     model.train()
     classifier.train()
-
+    epoch_begin_time = time.time()
     for i, batch in enumerate(train_loader):
         inputs = {name: tensor.to(model.device) for name, tensor in batch.items() if
                   name in ['input_ids', 'attention_mask']}
@@ -433,14 +437,13 @@ for epoch in range(epochs):
         # 打印每个批次的信息
         print(
             f"Epoch {epoch + 1}/{epochs}, Batch {i + 1}/{len(train_loader)}, Loss: {total_batch_loss.item()}, Accuracy: {correct / labels.size(0)}")
-
     # 每个epoch结束后，保存模型
     torch.save(model.state_dict(), f"{save_dict}/model_epoch_{epoch}.pt")
 
     # 计算并打印平均损失
     avg_loss = total_loss / len(train_loader)
     loss_list.append(avg_loss)
-    print(f"Epoch {epoch + 1}/{epochs}, Avg Loss: {avg_loss}")
+    print(f"Epoch {epoch + 1}/{epochs}, Avg Loss: {avg_loss} ,Time: {str(time.time() - epoch_begin_time)}")
 
     # 计算并打印准确率
     avg_accuracy = total_correct / total_examples
@@ -454,27 +457,25 @@ for epoch in range(epochs):
     # DEO_list.append(avg_DEO)
     # print(f"Epoch {epoch + 1}/{epochs}, Avg DAO: {avg_DAO}, Avg DEO: {avg_DEO}")
 
-# 创建一个名为 "result" 的文件夹，如果它不存在的话
-if not os.path.exists('result'):
-    os.makedirs('result')
-
-# loss
-plt.figure()
-plt.plot(range(epochs), accuracy_list)
-plt.title('loss over epochs')
-plt.xlabel('Epochs')
-plt.ylabel('loss')
-plt.savefig(f'{save_dict}/loss.png')  # Save the figure
-plt.close()
-
-# Accuracy
-plt.figure()
-plt.plot(range(epochs), accuracy_list)
-plt.title('Accuracy over epochs')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.savefig(f'{save_dict}/accuracy.png')  # Save the figure
-plt.close()
+print(f"total Time: {str(time.time() - total_begin_time)}")
+#
+# # loss
+# plt.figure()
+# plt.plot(range(epochs), accuracy_list)
+# plt.title('loss over epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('loss')
+# plt.savefig(f'{save_dict}/loss.png')  # Save the figure
+# plt.close()
+#
+# # Accuracy
+# plt.figure()
+# plt.plot(range(epochs), accuracy_list)
+# plt.title('Accuracy over epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.savefig(f'{save_dict}/accuracy.png')  # Save the figure
+# plt.close()
 
 # # DAO
 # plt.figure()

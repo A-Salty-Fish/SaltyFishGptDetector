@@ -125,7 +125,7 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'roberta_adt':
-        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer('../my_detector/adversarial_test/roberta_result/model_epoch_2.pt')
+        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer('../my_detector/adversarial_test/roberta_result/model_epoch_4.pt')
         def classify(text):
             return (roberta_adt.classify_is_human(model, tokenizer, cf, text) == 0)
 
