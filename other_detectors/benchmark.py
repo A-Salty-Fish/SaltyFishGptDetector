@@ -22,6 +22,7 @@ import llmdet
 import openai_roberta_base
 import openai_roberta_large
 import radar_vicuna
+import roberta_adt
 
 support_methods = [
     'gltr',
@@ -33,6 +34,7 @@ support_methods = [
     'openai-roberta-large',
     'radar-vicuna',
     'detect_gpt',
+    'roberta_adt'
 ]
 
 support_datasets = [
@@ -119,6 +121,13 @@ def get_classifier(method):
 
         def classify(text):
             return radar_vicuna.classify_is_human(model, text=text)
+
+        classifier = classify
+
+    if method == 'roberta_adt':
+        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer('../my_detector/adversarial_test/roberta_result/model_epoch_2.pt')
+        def classify(text):
+            return (roberta_adt.classify_is_human(model, tokenizer, cf, text) == 0)
 
         classifier = classify
 
@@ -578,27 +587,35 @@ if __name__ == '__main__':
     # for method in support_methods:
     #     output_test_result_table(test_moe_file(method, moe_files))
 
-    multi_domains = [
-        'finance',
-        'medicine',
-        'open_qa',
-        'wiki_csai'
-    ]
-    multi_prompts = [
-        'academic',
-        'continue',
-        'difficult',
-        'easy',
-        'rewrite'
-    ]
-    direct_files = []
-    for domain in multi_domains:
-        for prompt in multi_prompts:
-            direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
-        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
-    # for file in direct_files:
-    #     with open(file, 'r', encoding='utf-8'):
-    #         print(str(file))
-    for method in support_methods:
-        output_test_result_table(test_hc3_mix_multi(method, direct_files))
+    # multi_domains = [
+    #     'finance',
+    #     'medicine',
+    #     'open_qa',
+    #     'wiki_csai'
+    # ]
+    # multi_prompts = [
+    #     'academic',
+    #     'continue',
+    #     'difficult',
+    #     'easy',
+    #     'rewrite'
+    # ]
+    # direct_files = []
+    # for domain in multi_domains:
+    #     for prompt in multi_prompts:
+    #         direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
+    #     direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
+    # # for file in direct_files:
+    # #     with open(file, 'r', encoding='utf-8'):
+    # #         print(str(file))
+    # for method in support_methods:
+    #     output_test_result_table(test_hc3_mix_multi(method, direct_files))
 
+    output_test_result_table(test_hc3('roberta_adt',
+                                      [
+                                          '../data_collector/test_data/hc3_english/finance.jsonl',
+                                          '../data_collector/test_data/hc3_english/medicine.jsonl',
+                                          '../data_collector/test_data/hc3_english/open_qa.jsonl',
+                                          '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+                                       ]
+                                      ))
