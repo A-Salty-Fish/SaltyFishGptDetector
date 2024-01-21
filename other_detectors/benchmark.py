@@ -124,8 +124,21 @@ def get_classifier(method):
 
         classifier = classify
 
-    if method == 'roberta_adt':
-        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer('../my_detector/adversarial_test/roberta_result/model_epoch_4.pt')
+    if method.startswith('roberta_result_with_ad'):
+        epoch = method.split('_')[-1]
+        model_path = '../my_detector/adversarial_test/roberta_result_with_ad/model_epoch_' + epoch +'.pt'
+        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer(model_path)
+        print('load model:' + model_path)
+        def classify(text):
+            return (roberta_adt.classify_is_human(model, tokenizer, cf, text) == 0)
+
+        classifier = classify
+
+    if method.startswith('roberta_result_without_ad'):
+        epoch = method.split('_')[-1]
+        model_path = '../my_detector/adversarial_test/roberta_result_without_ad/model_epoch_' + epoch +'.pt'
+        model, tokenizer, cf = roberta_adt.init_model_and_tokenizer(model_path)
+        print('load model:' + model_path)
         def classify(text):
             return (roberta_adt.classify_is_human(model, tokenizer, cf, text) == 0)
 
@@ -610,12 +623,21 @@ if __name__ == '__main__':
     # #         print(str(file))
     # for method in support_methods:
     #     output_test_result_table(test_hc3_mix_multi(method, direct_files))
-
-    output_test_result_table(test_hc3('roberta_adt',
-                                      [
-                                          '../data_collector/test_data/hc3_english/finance.jsonl',
-                                          '../data_collector/test_data/hc3_english/medicine.jsonl',
-                                          '../data_collector/test_data/hc3_english/open_qa.jsonl',
-                                          '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
-                                       ]
-                                      ))
+    for epoch in [0, 2, 4, 9]:
+        output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),
+                                          [
+                                              '../data_collector/test_data/hc3_english/finance.jsonl',
+                                              '../data_collector/test_data/hc3_english/medicine.jsonl',
+                                              '../data_collector/test_data/hc3_english/open_qa.jsonl',
+                                              '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+                                           ]
+                                          ))
+    for epoch in [0, 2, 4, 9]:
+        output_test_result_table(test_hc3('roberta_result_without_ad_' + str(epoch),
+                                          [
+                                              '../data_collector/test_data/hc3_english/finance.jsonl',
+                                              '../data_collector/test_data/hc3_english/medicine.jsonl',
+                                              '../data_collector/test_data/hc3_english/open_qa.jsonl',
+                                              '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+                                           ]
+                                          ))
