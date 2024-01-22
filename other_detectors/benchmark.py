@@ -34,7 +34,7 @@ support_methods = [
     'openai-roberta-large',
     'radar-vicuna',
     'detect_gpt',
-    'roberta_adt'
+    # 'roberta_adt'
 ]
 
 support_datasets = [
@@ -421,7 +421,7 @@ def test_moe_file(method, direct_files):
     return test_results
 
 
-def test_hc3_mix_multi(method, direct_files):
+def test_hc3_mix_multi(method, direct_files, nums=200):
     print("method test begin:" + method)
     start_time = datetime.datetime.now()
     classifier = get_classifier(method)
@@ -445,8 +445,8 @@ def test_hc3_mix_multi(method, direct_files):
                     'content': json_obj['ai']
                 })
         random.shuffle(json_arr)
-        test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:200]
-        test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:200]
+        test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:nums]
+        test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:nums]
         # 截断过长的数据
         for i in range(0, len(test_datas['human'])):
             words = test_datas['human'][i]['content'].split(' ')
@@ -600,44 +600,47 @@ if __name__ == '__main__':
     # for method in support_methods:
     #     output_test_result_table(test_moe_file(method, moe_files))
 
-    # multi_domains = [
-    #     'finance',
-    #     'medicine',
-    #     'open_qa',
-    #     'wiki_csai'
-    # ]
-    # multi_prompts = [
-    #     'academic',
-    #     'continue',
-    #     'difficult',
-    #     'easy',
-    #     'rewrite'
-    # ]
-    # direct_files = []
-    # for domain in multi_domains:
-    #     for prompt in multi_prompts:
-    #         direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
-    #     direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
-    # # for file in direct_files:
-    # #     with open(file, 'r', encoding='utf-8'):
-    # #         print(str(file))
-    # for method in support_methods:
-    #     output_test_result_table(test_hc3_mix_multi(method, direct_files))
-    for epoch in [0, 2, 4, 9]:
-        output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),
-                                          [
-                                              '../data_collector/test_data/hc3_english/finance.jsonl',
-                                              '../data_collector/test_data/hc3_english/medicine.jsonl',
-                                              '../data_collector/test_data/hc3_english/open_qa.jsonl',
-                                              '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
-                                           ]
-                                          ))
-    for epoch in [0, 2, 4, 9]:
-        output_test_result_table(test_hc3('roberta_result_without_ad_' + str(epoch),
-                                          [
-                                              '../data_collector/test_data/hc3_english/finance.jsonl',
-                                              '../data_collector/test_data/hc3_english/medicine.jsonl',
-                                              '../data_collector/test_data/hc3_english/open_qa.jsonl',
-                                              '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
-                                           ]
-                                          ))
+    multi_domains = [
+        'finance',
+        'medicine',
+        'open_qa',
+        'wiki_csai'
+    ]
+    multi_prompts = [
+        'academic',
+        'continue',
+        'difficult',
+        'easy',
+        'rewrite'
+    ]
+    direct_files = []
+    for domain in multi_domains:
+        for prompt in multi_prompts:
+            direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
+        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
+    # for file in direct_files:
+    #     with open(file, 'r', encoding='utf-8'):
+    #         print(str(file))
+    for method in support_methods:
+        if method == 'detect_gpt':
+            output_test_result_table(test_hc3_mix_multi(method, direct_files, 50))
+        else:
+            output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
+    # for epoch in [0, 2, 4, 9]:
+    #     output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),
+    #                                       [
+    #                                           '../data_collector/test_data/hc3_english/finance.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/medicine.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/open_qa.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+    #                                        ]
+    #                                       ))
+    # for epoch in [0, 2, 4, 9]:
+    #     output_test_result_table(test_hc3('roberta_result_without_ad_' + str(epoch),
+    #                                       [
+    #                                           '../data_collector/test_data/hc3_english/finance.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/medicine.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/open_qa.jsonl',
+    #                                           '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
+    #                                        ]
+    #                                       ))
