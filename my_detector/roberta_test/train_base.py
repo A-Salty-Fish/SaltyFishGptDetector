@@ -43,6 +43,27 @@ class MyDataset(Dataset):
         print("end tokenize datas")
         self.labels = [x['label'] for i, x in dataframe.iterrows()]
 
+        self.domains = []
+        self.prompts = []
+        for i, x in dataframe.iterrows():
+            if x['domain'] is None:
+                self.domains.append('default')
+            else:
+                self.domains.append(x['domain'])
+            if x['prompt'] is None:
+                self.prompts.append('default')
+            else:
+                self.prompts.append(x['prompt'])
+        # if dataframe.iterrows()[0]['domain'] is None:
+        #     self.domains = ['default' for i, x in dataframe.iterrows() ]
+        # else:
+        #     self.domains = [x['domain'] for i, x in dataframe.iterrows()]
+        #
+        # if dataframe.iterrows()[0]['prompt'] is None:
+        #     self.prompts = ['default' for i, x in dataframe.iterrows() ]
+        # else:
+        #     self.prompts = [x['prompt'] for i, x in dataframe.iterrows()]
+
     def __getitem__(self, idx):
         text = self.texts[idx]
         label = self.labels[idx]
@@ -77,7 +98,7 @@ class MyClassifier(nn.Module):
 
 
 
-def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
+def train(model, train_dataloader, val_dataloader, learning_rate, epochs, save_name = "best_model.pt"):
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -144,7 +165,7 @@ def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
 
             if best_val_loss > total_loss_val:
                 best_val_loss = total_loss_val
-                torch.save(model, f"best_model.pt")
+                torch.save(model, save_name)
                 print("Saved model")
                 early_stopping_threshold_count = 0
             else:
@@ -169,7 +190,7 @@ def init_model_and_tokenizer(base_model_name='roberta-base'):
 if __name__ == '__main__':
 
     model, tokenizer = init_model_and_tokenizer()
-    train_df, val_df = load_train_and_val_df()
+    train_df, val_df = load_train_and_val_df('./data/hc3_mix_multi_prompt.train')
     train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer)
 
     learning_rate = 1e-5
