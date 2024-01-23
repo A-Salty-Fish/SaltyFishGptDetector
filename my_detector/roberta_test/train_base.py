@@ -1,15 +1,32 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
-train_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
-# test_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
-test_df = pd.read_csv("../Deberta_test/data/hc3_all.jsonl.test")
-
-train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=42)
-
-
 from torch.utils.data import Dataset
 import numpy as np
+
+from torch import nn
+import torch
+from torch.optim import Adam
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModel
+from torch.utils.data import DataLoader
+
+
+def load_train_and_val_df(train_data_path = "../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
+    train_file = pd.read_json(train_data_path)
+    train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
+    return train_df, val_df
+
+def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shuffle=False):
+    train_dataloader = DataLoader(MyDataset(train_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
+    val_dataloader = DataLoader(MyDataset(val_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
+
+    return train_dataloader, val_dataloader
+
+# train_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
+# test_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
+# test_df = pd.read_csv("../Deberta_test/data/hc3_all.jsonl.test")
+
+# train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=42)
 
 
 class MyDataset(Dataset):
@@ -36,9 +53,6 @@ class MyDataset(Dataset):
         return min(len(self.texts), len(self.labels))
 
 
-from torch import nn
-
-
 class MyClassifier(nn.Module):
     def __init__(self, base_model):
         super(MyClassifier, self).__init__()
@@ -61,10 +75,6 @@ class MyClassifier(nn.Module):
 
         return x
 
-
-import torch
-from torch.optim import Adam
-from tqdm import tqdm
 
 
 def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
@@ -145,43 +155,27 @@ def train(model, train_dataloader, val_dataloader, learning_rate, epochs):
                 break
 
 
-from transformers import AutoTokenizer, AutoModel
-from torch.utils.data import DataLoader
+def init_model_and_tokenizer(base_model_name='roberta-base'):
+    torch.manual_seed(0)
+    np.random.seed(0)
 
-torch.manual_seed(0)
-np.random.seed(0)
+    # BERT_MODEL = "roberta-base"
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    base_model = AutoModel.from_pretrained(base_model_name)
+    model = MyClassifier(base_model)
 
-BERT_MODEL = "roberta-base"
-tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL)
-base_model = AutoModel.from_pretrained(BERT_MODEL)
+    return model, tokenizer
 
-train_dataloader = DataLoader(MyDataset(train_df, tokenizer), batch_size=16, shuffle=True)
-val_dataloader = DataLoader(MyDataset(val_df, tokenizer), batch_size=16)
+if __name__ == '__main__':
 
-model = MyClassifier(base_model)
+    model, tokenizer = init_model_and_tokenizer()
+    train_df, val_df = load_train_and_val_df()
+    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer)
 
-learning_rate = 1e-5
-epochs = 5
-train(model, train_dataloader, val_dataloader, learning_rate, epochs)
+    learning_rate = 1e-5
+    epochs = 5
+    train(model, train_dataloader, val_dataloader, learning_rate, epochs)
 
 
-def get_text_predictions(model, loader):
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
 
-    model = model.to(device)
-
-    results_predictions = []
-    with torch.no_grad():
-        model.eval()
-        for data_input, _ in tqdm(loader):
-            attention_mask = data_input['attention_mask'].to(device)
-            input_ids = data_input['input_ids'].squeeze(1).to(device)
-
-            output = model(input_ids, attention_mask)
-
-            output = (output > 0.5).int()
-            results_predictions.append(output)
-
-    return torch.cat(results_predictions).cpu().detach().numpy()
 
