@@ -126,13 +126,39 @@ def get_acc(predictions, test_labels, domains, prompts):
     }
 
 
+def output_acc_with_key(key, acc_json):
+    total_acc_r = acc_json['total_acc_r']
+    human_total = acc_json['human_total']
+    human_acc = acc_json['human_acc']
+    human_acc_r = acc_json['human_acc_r']
+    ai_total = acc_json['ai_total']
+    ai_acc = acc_json['ai_acc']
+    ai_acc_r = acc_json['ai_acc_r']
+    print(f'{key}\t{total_acc_r}\t{human_total}\t{human_acc}\t{human_acc_r}\t{ai_total}\t{ai_acc}\t{ai_acc_r}')
+
+
 if __name__ == '__main__':
-    save_model = 'hc3_mix_multi_prompt.pt'
-    test_file = './data/hc3_row.test'
-    model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
-    test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
-    text_predictions = get_text_predictions(model, test_dataloader)
-    print(get_acc(text_predictions, test_labels, test_domains, test_prompts))
+    prompt_json = {
+        'academic': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1590, 'ai_acc': 499, 'ai_acc_r': 0.311875,
+                     'human_acc_r': 0.99375, 'total_acc_r': 0.6528125},
+        'continue': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1588, 'ai_acc': 1323, 'ai_acc_r': 0.826875,
+                     'human_acc_r': 0.9925, 'total_acc_r': 0.9096875},
+        'difficult': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1589, 'ai_acc': 4, 'ai_acc_r': 0.0025,
+                      'human_acc_r': 0.993125, 'total_acc_r': 0.4978125},
+        'easy': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1590, 'ai_acc': 903, 'ai_acc_r': 0.564375,
+                 'human_acc_r': 0.99375, 'total_acc_r': 0.7790625},
+        'rewrite': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1592, 'ai_acc': 800, 'ai_acc_r': 0.5,
+                    'human_acc_r': 0.995, 'total_acc_r': 0.7475},
+        'qa': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5742, 'ai_acc': 4769, 'ai_acc_r': 0.8265164644714038,
+               'human_acc_r': 0.9954923717059639, 'total_acc_r': 0.9109897729242503}}
+    for key in prompt_json:
+        output_acc_with_key(key, prompt_json[key])
+    # save_model = 'hc3_mix_multi_prompt.pt'
+    # test_file = './data/hc3_row.test'
+    # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
+    # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
+    # text_predictions = get_text_predictions(model, test_dataloader)
+    # print(get_acc(text_predictions, test_labels, test_domains, test_prompts))
 
     # row -> row
     # {'prompts': {'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
