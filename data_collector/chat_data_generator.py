@@ -338,17 +338,17 @@ def generate_multi_prompt_hc3(model, tokenizer):
                 json_objs.append(json.loads(line))
             for prompt_name in prompts_map:
                 count = 0
-                with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'r', encoding='utf-8') as test_out_f:
+                with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'a', encoding='utf-8') as test_out_f:
                     for line in test_out_f:
                         count+=1
-                if count != 500:
+                if True:
                     random.shuffle(json_objs)
                     print(f"{file_name} {prompt_name} {count}")
                     with open('./' + file_name + '.' + prompt_name + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
-                        for i in range(0, 500):
+                        for i in range(0, 200):
                             print(str(i), end='\r')
-                            if i > 500:
-                                break
+                            # if i > 500:
+                            #     break
                             json_obj = json_objs[i]
                             ai_answer = json_obj['ai']
                             new_json_obj = {
