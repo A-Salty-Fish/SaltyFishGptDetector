@@ -9,7 +9,7 @@ from train_base import MyDataset
 from train_base import MyClassifier
 
 
-def get_text_predictions(model, loader):
+def get_text_predictions(model, loader, bar=0.5):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -24,7 +24,7 @@ def get_text_predictions(model, loader):
 
             output = model(input_ids, attention_mask)
 
-            output = (output > 0.5).int()
+            output = (output > bar).int()
             results_predictions.append(output)
 
     return torch.cat(results_predictions).cpu().detach().numpy()
@@ -127,7 +127,83 @@ def get_acc(predictions, test_labels, domains, prompts):
 
 
 if __name__ == '__main__':
-    model, tokenizer = init_test_model_and_tokenizer()
-    test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, './data/hc3_mix_multi_prompt.test')
+    save_model = 'hc3_mix_multi_prompt.pt'
+    test_file = './data/hc3_row.test'
+    model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
+    test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
     text_predictions = get_text_predictions(model, test_dataloader)
     print(get_acc(text_predictions, test_labels, test_domains, test_prompts))
+
+    # row -> row
+    # {'prompts': {'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
+    #                          'ai_acc_r': 0.6507798960138648, 'human_acc_r': 0.9996532593619972,
+    #                          'total_acc_r': 0.8251863407869648}}, 'domains': {
+    #     'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
+    #                 'ai_acc_r': 0.6507798960138648, 'human_acc_r': 0.9996532593619972,
+    #                 'total_acc_r': 0.8251863407869648}},
+    #  'all': {'ai_acc': 3755, 'ai_total': 5770, 'ai_acc_r': 0.6507798960138648, 'human_acc': 5766, 'human_total': 5768,
+    #          'human_acc_r': 0.9996532593619972, 'total_acc_r': 0.8251863407869648}}
+
+    # row -> mix
+    # {'prompts': {
+    #     'academic': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1590, 'ai_acc': 499, 'ai_acc_r': 0.311875,
+    #                  'human_acc_r': 0.99375, 'total_acc_r': 0.6528125},
+    #     'continue': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1588, 'ai_acc': 1323, 'ai_acc_r': 0.826875,
+    #                  'human_acc_r': 0.9925, 'total_acc_r': 0.9096875},
+    #     'difficult': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1589, 'ai_acc': 4, 'ai_acc_r': 0.0025,
+    #                   'human_acc_r': 0.993125, 'total_acc_r': 0.4978125},
+    #     'easy': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1590, 'ai_acc': 903, 'ai_acc_r': 0.564375,
+    #              'human_acc_r': 0.99375, 'total_acc_r': 0.7790625},
+    #     'rewrite': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1592, 'ai_acc': 800, 'ai_acc_r': 0.5,
+    #                 'human_acc_r': 0.995, 'total_acc_r': 0.7475},
+    #     'qa': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5742, 'ai_acc': 4769, 'ai_acc_r': 0.8265164644714038,
+    #            'human_acc_r': 0.9954923717059639, 'total_acc_r': 0.9109897729242503}}, 'domains': {
+    #     'finance': {'human_total': 5146, 'ai_total': 5147, 'human_acc': 5143, 'ai_acc': 3878,
+    #                 'ai_acc_r': 0.7534486108412668, 'human_acc_r': 0.9994170229304314,
+    #                 'total_acc_r': 0.8764208685514427},
+    #     'medicine': {'human_total': 2998, 'ai_total': 2999, 'human_acc': 2996, 'ai_acc': 1851,
+    #                  'ai_acc_r': 0.6172057352450817, 'human_acc_r': 0.9993328885923949,
+    #                  'total_acc_r': 0.808237452059363},
+    #     'open_qa': {'human_total': 2950, 'ai_total': 2950, 'human_acc': 2909, 'ai_acc': 1626,
+    #                 'ai_acc_r': 0.5511864406779661, 'human_acc_r': 0.9861016949152542,
+    #                 'total_acc_r': 0.7686440677966102},
+    #     'wiki_csai': {'human_total': 2674, 'ai_total': 2674, 'human_acc': 2643, 'ai_acc': 943,
+    #                   'ai_acc_r': 0.3526551982049364, 'human_acc_r': 0.9884068810770381,
+    #                   'total_acc_r': 0.6705310396409873}},
+    #  'all': {'ai_acc': 8298, 'ai_total': 13770, 'ai_acc_r': 0.6026143790849673, 'human_acc': 13691,
+    #          'human_total': 13768, 'human_acc_r': 0.9944073213248111, 'total_acc_r': 0.7984966228484276}}
+
+    # mix -> mix
+    # {'prompts': {'academic': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1598, 'ai_acc': 1600, 'ai_acc_r': 1.0,
+    #                           'human_acc_r': 0.99875, 'total_acc_r': 0.999375},
+    #              'continue': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1599, 'ai_acc': 1600, 'ai_acc_r': 1.0,
+    #                           'human_acc_r': 0.999375, 'total_acc_r': 0.9996875},
+    #              'difficult': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1598, 'ai_acc': 1600,
+    #                            'ai_acc_r': 1.0, 'human_acc_r': 0.99875, 'total_acc_r': 0.999375},
+    #              'easy': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1598, 'ai_acc': 1600, 'ai_acc_r': 1.0,
+    #                       'human_acc_r': 0.99875, 'total_acc_r': 0.999375},
+    #              'rewrite': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1598, 'ai_acc': 1600, 'ai_acc_r': 1.0,
+    #                          'human_acc_r': 0.99875, 'total_acc_r': 0.999375},
+    #              'qa': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 5769,
+    #                     'ai_acc_r': 0.9998266897746967, 'human_acc_r': 0.9996532593619972,
+    #                     'total_acc_r': 0.999739989599584}}, 'domains': {
+    #     'finance': {'human_total': 5146, 'ai_total': 5147, 'human_acc': 5146, 'ai_acc': 5146,
+    #                 'ai_acc_r': 0.9998057120652808, 'human_acc_r': 1.0, 'total_acc_r': 0.9999028465947731},
+    #     'medicine': {'human_total': 2998, 'ai_total': 2999, 'human_acc': 2998, 'ai_acc': 2999, 'ai_acc_r': 1.0,
+    #                  'human_acc_r': 1.0, 'total_acc_r': 1.0},
+    #     'open_qa': {'human_total': 2950, 'ai_total': 2950, 'human_acc': 2950, 'ai_acc': 2950, 'ai_acc_r': 1.0,
+    #                 'human_acc_r': 1.0, 'total_acc_r': 1.0},
+    #     'wiki_csai': {'human_total': 2674, 'ai_total': 2674, 'human_acc': 2663, 'ai_acc': 2674, 'ai_acc_r': 1.0,
+    #                   'human_acc_r': 0.9958863126402393, 'total_acc_r': 0.9979431563201197}},
+    #  'all': {'ai_acc': 13769, 'ai_total': 13770, 'ai_acc_r': 0.9999273783587509, 'human_acc': 13757,
+    #          'human_total': 13768, 'human_acc_r': 0.9992010459035444, 'total_acc_r': 0.9995642385067907}}
+
+    # mix -> hc3
+    # {'prompts': {'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
+    #                          'ai_acc_r': 0.6507798960138648, 'human_acc_r': 0.9996532593619972,
+    #                          'total_acc_r': 0.8251863407869648}}, 'domains': {
+    #     'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
+    #                 'ai_acc_r': 0.6507798960138648, 'human_acc_r': 0.9996532593619972,
+    #                 'total_acc_r': 0.8251863407869648}},
+    #  'all': {'ai_acc': 3755, 'ai_total': 5770, 'ai_acc_r': 0.6507798960138648, 'human_acc': 5766, 'human_total': 5768,
+    #          'human_acc_r': 0.9996532593619972, 'total_acc_r': 0.8251863407869648}}

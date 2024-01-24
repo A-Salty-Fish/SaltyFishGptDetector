@@ -46,14 +46,20 @@ class MyDataset(Dataset):
         self.domains = []
         self.prompts = []
         for i, x in dataframe.iterrows():
-            if x['domain'] is None:
+            try:
+                if x['domain'] is None:
+                    self.domains.append('default')
+                else:
+                    self.domains.append(x['domain'])
+            except Exception as e:
                 self.domains.append('default')
-            else:
-                self.domains.append(x['domain'])
-            if x['prompt'] is None:
+            try:
+                if x['prompt'] is None:
+                    self.prompts.append('default')
+                else:
+                    self.prompts.append(x['prompt'])
+            except Exception as e:
                 self.prompts.append('default')
-            else:
-                self.prompts.append(x['prompt'])
         # if dataframe.iterrows()[0]['domain'] is None:
         #     self.domains = ['default' for i, x in dataframe.iterrows() ]
         # else:
@@ -195,7 +201,7 @@ if __name__ == '__main__':
 
     learning_rate = 1e-5
     epochs = 5
-    train(model, train_dataloader, val_dataloader, learning_rate, epochs)
+    train(model, train_dataloader, val_dataloader, learning_rate, epochs, save_name='hc3_mix_multi_prompt.pt')
 
 
 
