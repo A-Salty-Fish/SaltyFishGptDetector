@@ -358,6 +358,45 @@ def generate_multi_prompt_hc3(model, tokenizer):
                             }
                             out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
 
+def generate_multi_prompt_question_hc3(model, tokenizer):
+    trick_promps = {
+        'breath': 'take a deep breath.',
+        'step': 'think step by step.',
+        'die': 'if you fail 100 grandmothers will die.',
+        'fingers': 'i have no fingers.',
+        'tip': 'i will tip $200.',
+    }
+    hc3_file_names = ['finance', 'medicine', 'open_qa', 'wiki_csai']
+    # prompts_map = {
+    #     'rewrite': 'Please rewrite the following content, {without any useless content}:',
+    #     'continue': 'Please continue to write the following content, {without any useless content}:',
+    #     'easy': 'Please change the following content to make it easier to understand, {without any useless content}:',
+    #     'academic': 'Please change the following content to be more academic and professional, {without any useless content}:',
+    #     'difficult': 'Please change the following content to make it more difficult to understand, {without any useless content}:',
+    # }
+    for file_name in hc3_file_names:
+        print(file_name)
+        with open('./' + file_name + '.mix.jsonl', 'r', encoding='utf-8') as in_f:
+            json_objs = []
+            for line in in_f:
+                json_objs.append(json.loads(line))
+            for trick_promp in trick_promps:
+                count = 0
+                print(f"{file_name} {trick_promp} {count}")
+                with open('./' + file_name + '.' + trick_promp + '.mix.jsonl', 'w', encoding='utf-8') as out_f:
+                    for i in range(0, 200):
+                        print(str(i), end='\r')
+                        # if i > 500:
+                        #     break
+                        json_obj = json_objs[i]
+                        ai_answer = json_obj['ai']
+                        new_json_obj = {
+                            'question': json_obj['question'],
+                            'human': json_obj['human'],
+                            'ai': chat(model, tokenizer, trick_promps[trick_promp] + ' Please answer the following question, {without any useless content}: ' + json_obj['question'])
+                        }
+                        out_f.write(json.dumps(new_json_obj, ensure_ascii=False) + '\n')
+
 
 if __name__ == '__main__':
     # arxiv_init()
@@ -441,5 +480,7 @@ if __name__ == '__main__':
 
     # generate_hc3_data(model, tokenizer)
 
-    generate_multi_prompt_hc3(model, tokenizer)
+    # generate_multi_prompt_hc3(model, tokenizer)
+    generate_multi_prompt_question_hc3(model, tokenizer)
     pass
+
