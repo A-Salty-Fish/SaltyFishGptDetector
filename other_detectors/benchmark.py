@@ -491,6 +491,22 @@ def output_test_result_table(results, output_file_name=None):
         # 写入数据行
         writer.writerows(results)
 
+def multi_prompt_hc3_test(multi_domains, multi_prompts):
+    direct_files = []
+    for domain in multi_domains:
+        for prompt in multi_prompts:
+            direct_files.append(
+                '../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl')
+        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl')
+    # for file in direct_files:
+    #     with open(file, 'r', encoding='utf-8'):
+    #         print(str(file))
+    for method in support_methods:
+        if method == 'detect_gpt':
+            output_test_result_table(test_hc3_mix_multi(method, direct_files, 50))
+        else:
+            output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
+
 
 if __name__ == '__main__':
 
@@ -600,6 +616,33 @@ if __name__ == '__main__':
     # for method in support_methods:
     #     output_test_result_table(test_moe_file(method, moe_files))
 
+    # multi_domains = [
+    #     'finance',
+    #     'medicine',
+    #     'open_qa',
+    #     'wiki_csai'
+    # ]
+    # multi_prompts = [
+    #     'academic',
+    #     'continue',
+    #     'difficult',
+    #     'easy',
+    #     'rewrite'
+    # ]
+    # direct_files = []
+    # for domain in multi_domains:
+    #     for prompt in multi_prompts:
+    #         direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
+    #     direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
+    # # for file in direct_files:
+    # #     with open(file, 'r', encoding='utf-8'):
+    # #         print(str(file))
+    # for method in support_methods:
+    #     if method == 'detect_gpt':
+    #         output_test_result_table(test_hc3_mix_multi(method, direct_files, 50))
+    #     else:
+    #         output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
+
     multi_domains = [
         'finance',
         'medicine',
@@ -607,25 +650,14 @@ if __name__ == '__main__':
         'wiki_csai'
     ]
     multi_prompts = [
-        'academic',
-        'continue',
-        'difficult',
-        'easy',
-        'rewrite'
+        'breath',
+        'die',
+        'fingers',
+        'step',
+        'tip'
     ]
-    direct_files = []
-    for domain in multi_domains:
-        for prompt in multi_prompts:
-            direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.' + prompt + '.mix.jsonl' )
-        direct_files.append('../data_collector/test_data/hc3_english_mix_multi/' + domain + '.mix.jsonl' )
-    # for file in direct_files:
-    #     with open(file, 'r', encoding='utf-8'):
-    #         print(str(file))
-    for method in support_methods:
-        if method == 'detect_gpt':
-            output_test_result_table(test_hc3_mix_multi(method, direct_files, 50))
-        else:
-            output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
+    multi_prompt_hc3_test(multi_domains, multi_prompts)
+
     # for epoch in [0, 2, 4, 9]:
     #     output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),
     #                                       [
@@ -644,3 +676,4 @@ if __name__ == '__main__':
     #                                           '../data_collector/test_data/hc3_english/wiki_csai.jsonl',
     #                                        ]
     #                                       ))
+
