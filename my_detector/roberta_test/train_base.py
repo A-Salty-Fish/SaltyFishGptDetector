@@ -60,15 +60,6 @@ class MyDataset(Dataset):
                     self.prompts.append(x['prompt'])
             except Exception as e:
                 self.prompts.append('default')
-        # if dataframe.iterrows()[0]['domain'] is None:
-        #     self.domains = ['default' for i, x in dataframe.iterrows() ]
-        # else:
-        #     self.domains = [x['domain'] for i, x in dataframe.iterrows()]
-        #
-        # if dataframe.iterrows()[0]['prompt'] is None:
-        #     self.prompts = ['default' for i, x in dataframe.iterrows() ]
-        # else:
-        #     self.prompts = [x['prompt'] for i, x in dataframe.iterrows()]
 
     def __getitem__(self, idx):
         text = self.texts[idx]
