@@ -421,7 +421,7 @@ def test_moe_file(method, direct_files):
     return test_results
 
 
-def test_hc3_mix_multi(method, direct_files, nums=200):
+def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl'):
     print("method test begin:" + method)
     start_time = datetime.datetime.now()
     classifier = get_classifier(method)
@@ -433,17 +433,26 @@ def test_hc3_mix_multi(method, direct_files, nums=200):
             'ai': []
         }
         with open(direct_file, 'r', encoding='utf-8') as f:
-            json_arr = []
-            for line in f:
-                json_obj = json.loads(line)
-                json_arr.append({
-                    'label': 0,
-                    'content': json_obj['human']
-                })
-                json_arr.append({
-                    'label': 1,
-                    'content': json_obj['ai']
-                })
+            if file_type == 'two_type_jsonl':
+                json_arr = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    json_arr.append({
+                        'label': 0,
+                        'content': json_obj['human']
+                    })
+                    json_arr.append({
+                        'label': 1,
+                        'content': json_obj['ai']
+                    })
+            else:
+                json_arr = []
+                for line in f:
+                    json_obj = json.loads(line)
+                    json_arr.append({
+                        'label': json_obj['label'],
+                        'content': json_obj['content']
+                    })
         random.shuffle(json_arr)
         test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:nums]
         test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:nums]
@@ -483,7 +492,7 @@ def output_test_result_table(results, output_file_name=None):
         pass
     else:
         results = [results]
-    with open(output_file_name, 'w', encoding='utf-8') as output_file:
+    with open(output_file_name + '.csv', 'w', encoding='utf-8') as output_file:
         fieldnames = results[0].keys()
         writer = csv.DictWriter(output_file, fieldnames=fieldnames)
         # 写入标题行
@@ -643,20 +652,32 @@ if __name__ == '__main__':
     #     else:
     #         output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
 
-    multi_domains = [
-        'finance',
-        'medicine',
-        'open_qa',
-        'wiki_csai'
-    ]
-    multi_prompts = [
-        'breath',
-        'die',
-        'fingers',
-        'step',
-        'tip'
-    ]
-    multi_prompt_hc3_test(multi_domains, multi_prompts)
+    # multi_domains = [
+    #     'finance',
+    #     'medicine',
+    #     'open_qa',
+    #     'wiki_csai'
+    # ]
+    # multi_prompts = [
+    #     'breath',
+    #     'die',
+    #     'fingers',
+    #     'step',
+    #     'tip'
+    # ]
+    # multi_prompt_hc3_test(multi_domains, multi_prompts)
+
+
+    for kn in [3, 5, 7, 9, 11]:
+        direct_files = []
+        for i in range(0, kn):
+            file_name = '../data_collector/test_data/hc3_english_mix_knn/' + str(kn) + '_' + str(i) + '.jsonl'
+            direct_files.append(file_name)
+        for method in support_methods:
+            if method == 'detect_gpt':
+                continue
+            else:
+                output_test_result_table(test_hc3_mix_multi(method, direct_files, 200, 'one_type_jsonl'), method + '_kn_' +str(kn))
 
     # for epoch in [0, 2, 4, 9]:
     #     output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),

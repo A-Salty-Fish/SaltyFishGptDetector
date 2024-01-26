@@ -60,4 +60,5 @@ if __name__ == '__main__':
         knn_map = convert_jsons_knn(all_jsons, kn)
         for knn_label in knn_map:
             with open('./test_data/hc3_english_mix_knn/' + str(kn) + '_' + str(knn_label) + '.jsonl', 'w', encoding='utf-8') as out_f:
-                out_f.write(json.dumps(knn_map[knn_label]))
+                for json_obj in knn_map[knn_label]:
+                    out_f.write(json.dumps(json_obj) + '\n')
