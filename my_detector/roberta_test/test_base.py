@@ -153,14 +153,21 @@ if __name__ == '__main__':
     #            'human_acc_r': 0.9954923717059639, 'total_acc_r': 0.9109897729242503}}
     # for key in prompt_json:
     #     output_acc_with_key(key, prompt_json[key])
-    save_model = 'hc3_row.pt'
+    save_model = 'hc3_mix_ad.pt'
     test_file = './data/hc3_mix_multi_prompt.test'
     model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
-    for bar in [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:
-        print(bar)
-        text_predictions = get_text_predictions(model, test_dataloader, bar)
-        print(get_acc(text_predictions, test_labels, test_domains, test_prompts))
+    text_predictions = get_text_predictions(model, test_dataloader)
+    acc_result = get_acc(text_predictions, test_labels, test_domains, test_prompts)
+    print(acc_result)
+    for key in acc_result['prompts']:
+        output_acc_with_key(key, acc_result['prompts'][key])
+
+
+    # for bar in [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:
+    #     print(bar)
+    #     text_predictions = get_text_predictions(model, test_dataloader, bar)
+    #     print(get_acc(text_predictions, test_labels, test_domains, test_prompts))
 
     # row -> row
     # {'prompts': {'default': {'human_total': 5768, 'ai_total': 5770, 'human_acc': 5766, 'ai_acc': 3755,
