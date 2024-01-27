@@ -9,13 +9,13 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch import nn
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel
 from torch.utils.data import Dataset, DataLoader
 
 import torch
 
-from test_base import init_test_model_and_tokenizer
-from train_base import MyClassifier
+# from test_base import init_test_model_and_tokenizer
+# from train_base import MyClassifier
 
 
 def init_model_and_tokenizer(model_name="mistralai/Mistral-7B-Instruct-v0.2"):
@@ -122,7 +122,7 @@ def get_adversary_prompts():
     return prompts_map
 
 
-def adversary_val(train_model: MyClassifier, prompt_dataloader_map, device='cuda'):
+def adversary_val(train_model, prompt_dataloader_map, device='cuda'):
     criterion = nn.BCELoss()
     prompt_loss_map = {}
     for prompt in prompt_dataloader_map:
@@ -222,7 +222,7 @@ class AdversaryGenerator:
         print("end init adversary generator: " + str(end_time - begin_time))
 
     # 将当前训练的模型进行评估，评估不同类的分类loss
-    def val_cur_train_model_by_local_datas(self, cur_train_model: MyClassifier, cur_train_tokenizer, eval_nums=16):
+    def val_cur_train_model_by_local_datas(self, cur_train_model, cur_train_tokenizer, eval_nums=16):
         criterion = nn.BCELoss()
         key_loss_map = {}
         device = self.device
@@ -250,7 +250,8 @@ class AdversaryGenerator:
         log_loss_percent_map = {}
 
         for k in loss_map:
-            log_loss_map[k] = (-math.log10(1 - loss_map[k]))
+            # log_loss_map[k] = (-math.log10(1 - loss_map[k]))
+            log_loss_map[k] = loss_map[k]
             log_loss_sum += log_loss_map[k]
 
         for k in log_loss_map:
@@ -319,6 +320,16 @@ class AdversaryGenerator:
     def generate_chat_context(self, text):
         return chat(self.chat_model, self.chat_tokenizer, text)
 
+
+def init_test_model_and_tokenizer(base_model_name="roberta-base", test_model_path='best_model.pt'):
+    # BERT_MODEL = "roberta-base"
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    base_model = AutoModel.from_pretrained(base_model_name)
+    model = (torch.load(test_model_path))
+    # model = MyClassifier(base_model)
+    model.eval()
+
+    return model, tokenizer
 
 if __name__ == '__main__':
     local_val_file_map = {
