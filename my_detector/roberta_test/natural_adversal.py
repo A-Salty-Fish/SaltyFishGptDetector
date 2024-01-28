@@ -14,6 +14,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import torch
 
+
 # from test_base import init_test_model_and_tokenizer
 # from train_base import MyClassifier
 
@@ -139,8 +140,6 @@ def adversary_val(train_model, prompt_dataloader_map, device='cuda'):
     return prompt_loss_map
 
 
-
-
 class AdversaryGenerator:
 
     def init_adversary_model_and_tokenizer(self, model_name="mistralai/Mistral-7B-Instruct-v0.2"):
@@ -174,11 +173,13 @@ class AdversaryGenerator:
         return file_objs
 
     # 初始化分类好的验证集，模型等参数
-    def __init__(self,  local_val_files_map, prompts_map, train_df, file_load_func=default_file_load_func, tmp_data_path='./tmp_ad/', lazy_init=False):
+    def __init__(self, local_val_files_map, prompts_map, train_df, file_load_func=default_file_load_func,
+                 tmp_data_path='./tmp_ad/', lazy_init=False, random_generate=False):
         print("begin init adversary generator")
         begin_time = time.time()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        self.random_generate = random_generate
         self.lazy_init = lazy_init
         if not lazy_init:
             chat_model, chat_tokenizer = self.init_adversary_model_and_tokenizer()
@@ -230,7 +231,8 @@ class AdversaryGenerator:
             key_loss = 0
             key_eval_datas = self.val_data_map[key][0: eval_nums]
             key_adversary_dataset = MyAdversaryDataset(key_eval_datas, cur_train_tokenizer)
-            key_adversary_dataloader = get_adversary_data_loader(adversary_data=key_adversary_dataset, batch_size=eval_nums)
+            key_adversary_dataloader = get_adversary_data_loader(adversary_data=key_adversary_dataset,
+                                                                 batch_size=eval_nums)
             for train_input, train_label in tqdm(key_adversary_dataloader):
                 attention_mask = train_input['attention_mask'].to(device)
                 input_ids = train_input['input_ids'].squeeze(1).to(device)
@@ -284,7 +286,7 @@ class AdversaryGenerator:
         tmp_data_path = self.tmp_data_path
         save_file_name = 'adversary_train_data' + str(datetime.datetime.now()) + '.jsonl'
 
-        row_train_datas = [x for x in self.train_datas if x['label'] == 1][0: int(batch_size*1.5)]
+        row_train_datas = [x for x in self.train_datas if x['label'] == 1][0: int(batch_size * 1.5)]
         row_data_index = 0
         random.shuffle(row_train_datas)
 
@@ -295,7 +297,11 @@ class AdversaryGenerator:
             prompt_template = prompts_map[key]
             for i in range(0, adversary_nums_map[key]):
                 row_train_data = row_train_datas[row_data_index]
-                chat_text = prompt_template + row_train_data['content']
+
+                if self.random_generate:
+                    chat_text = "please write something based on following content, {without any useless content}:" + row_train_data['content']
+                else:
+                    chat_text = prompt_template + row_train_data['content']
                 chat_result = self.generate_chat_context(chat_text)
                 adversary_train_datas.append({
                     'label': 1,
@@ -316,7 +322,6 @@ class AdversaryGenerator:
 
         return adversary_train_datas
 
-
     def generate_chat_context(self, text):
         return chat(self.chat_model, self.chat_tokenizer, text)
 
@@ -330,6 +335,7 @@ def init_test_model_and_tokenizer(base_model_name="roberta-base", test_model_pat
     model.eval()
 
     return model, tokenizer
+
 
 if __name__ == '__main__':
     local_val_file_map = {
@@ -360,12 +366,11 @@ if __name__ == '__main__':
 
     train_model, train_tokenizer = init_test_model_and_tokenizer(test_model_path='hc3_row.pt')
 
-    loss_map = adversary_generator.val_cur_train_model_by_local_datas(cur_train_model=train_model, cur_train_tokenizer=train_tokenizer)
+    loss_map = adversary_generator.val_cur_train_model_by_local_datas(cur_train_model=train_model,
+                                                                      cur_train_tokenizer=train_tokenizer)
     print(loss_map)
 
     data_num_map = adversary_generator.calculate_adversary_data_num_by_loss(loss_map)
     print(data_num_map)
 
     print(adversary_generator.generate_adversary_train_data_by_val_result(loss_map))
-
-

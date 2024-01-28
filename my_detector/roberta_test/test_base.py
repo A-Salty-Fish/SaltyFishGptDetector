@@ -137,6 +137,17 @@ def output_acc_with_key(key, acc_json):
     print(f'{key}\t{total_acc_r}\t{human_total}\t{human_acc}\t{human_acc_r}\t{ai_total}\t{ai_acc}\t{ai_acc_r}')
 
 
+def test_multi_prompt(model_path, test_file):
+    save_model = model_path
+    test_file = test_file
+    model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
+    test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
+    text_predictions = get_text_predictions(model, test_dataloader)
+    acc_result = get_acc(text_predictions, test_labels, test_domains, test_prompts)
+    print(acc_result)
+    for key in acc_result['prompts']:
+        output_acc_with_key(key, acc_result['prompts'][key])
+
 if __name__ == '__main__':
     # prompt_json = {
     #     'academic': {'human_total': 1600, 'ai_total': 1600, 'human_acc': 1590, 'ai_acc': 499, 'ai_acc_r': 0.311875,
@@ -153,15 +164,18 @@ if __name__ == '__main__':
     #            'human_acc_r': 0.9954923717059639, 'total_acc_r': 0.9109897729242503}}
     # for key in prompt_json:
     #     output_acc_with_key(key, prompt_json[key])
-    save_model = 'hc3_mix_ad.pt'
+
+    save_model = 'hc3_mix_at.pt'
     test_file = './data/hc3_mix_multi_prompt.test'
-    model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
-    test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
-    text_predictions = get_text_predictions(model, test_dataloader)
-    acc_result = get_acc(text_predictions, test_labels, test_domains, test_prompts)
-    print(acc_result)
-    for key in acc_result['prompts']:
-        output_acc_with_key(key, acc_result['prompts'][key])
+    # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
+    # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
+    # text_predictions = get_text_predictions(model, test_dataloader)
+    # acc_result = get_acc(text_predictions, test_labels, test_domains, test_prompts)
+    # print(acc_result)
+    # for key in acc_result['prompts']:
+    #     output_acc_with_key(key, acc_result['prompts'][key])
+
+    test_multi_prompt(save_model, test_file)
 
 
     # for bar in [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:

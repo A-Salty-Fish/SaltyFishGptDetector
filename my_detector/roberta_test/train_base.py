@@ -13,16 +13,18 @@ from torch.utils.data import DataLoader
 from natural_adversal import AdversaryGenerator, MyAdversaryDataset
 
 
-def load_train_and_val_df(train_data_path = "../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
+def load_train_and_val_df(train_data_path="../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
     train_file = pd.read_json(train_data_path)
     train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
     return train_df, val_df
+
 
 def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shuffle=False):
     train_dataloader = DataLoader(MyDataset(train_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
     val_dataloader = DataLoader(MyDataset(val_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
 
     return train_dataloader, val_dataloader
+
 
 # train_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
 # test_df = pd.read_json("../Deberta_test/data/hc3_all.jsonl.train")
@@ -96,8 +98,8 @@ class MyClassifier(nn.Module):
         return x
 
 
-
-def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16 , save_name = "best_model.pt", adversary_generator=None):
+def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
+          save_name="best_model.pt", adversary_generator=None):
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -109,7 +111,6 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
 
     model = model.to(device)
     criterion = criterion.to(device)
-
 
     for epoch in range(epochs):
         total_acc_train = 0
@@ -140,7 +141,7 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
             total_loss_adversary = 0
             print("begin adversary module")
             adversary_loss_map = adversary_generator.val_cur_train_model_by_local_datas(cur_train_model=model,
-                                                                              cur_train_tokenizer=tokenizer)
+                                                                                        cur_train_tokenizer=tokenizer)
             print(adversary_loss_map)
             for k in adversary_loss_map:
                 total_loss_adversary += adversary_loss_map[k]
@@ -149,9 +150,11 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
             adversary_data_num_map = adversary_generator.calculate_adversary_data_num_by_loss(adversary_loss_map)
             print(adversary_data_num_map)
             print("begin generate adversary train datas....")
-            adversary_train_data = (adversary_generator.generate_adversary_train_data_by_val_result(adversary_data_num_map))
+            adversary_train_data = (
+                adversary_generator.generate_adversary_train_data_by_val_result(adversary_data_num_map))
 
-            adversary_train_dataloader = DataLoader(MyAdversaryDataset(adversary_train_data, tokenizer), batch_size=batch_size)
+            adversary_train_dataloader = DataLoader(MyAdversaryDataset(adversary_train_data, tokenizer),
+                                                    batch_size=batch_size)
             print("training generate adversary train datas")
 
             total_loss_adversary_train = 0
@@ -168,7 +171,6 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
-
 
         with torch.no_grad():
             total_acc_val = 0
@@ -221,7 +223,8 @@ def init_model_and_tokenizer(base_model_name='roberta-base'):
 
     return model, tokenizer
 
-def init_adversary_generator(train_df):
+
+def init_adversary_generator(train_df, random_generate=False):
     local_val_file_map = {
         'rewrite': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.rewrite.mix.jsonl',
         'continue': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.continue.mix.jsonl',
@@ -242,10 +245,26 @@ def init_adversary_generator(train_df):
     adversary_generator = AdversaryGenerator(
         local_val_files_map=local_val_file_map,
         prompts_map=prompts_map,
-        train_df=train_df
+        train_df=train_df,
+        random_generate=random_generate
     )
 
     return adversary_generator
+
+
+def begin_train(train_data_file,
+                adversary_generator,
+                model_save_name,
+                base_model_name='roberta-base',
+                batch_size=16,
+                learning_rate=1e-5,
+                epochs=5,
+                ):
+    model, tokenizer = init_model_and_tokenizer(base_model_name)
+    train_df, val_df = load_train_and_val_df(train_data_file)
+    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size)
+    train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size,
+          save_name=model_save_name, adversary_generator=adversary_generator)
 
 
 if __name__ == '__main__':
@@ -253,13 +272,14 @@ if __name__ == '__main__':
     train_file = './data/hc3_row.train'
     model, tokenizer = init_model_and_tokenizer()
     train_df, val_df = load_train_and_val_df(train_file)
-    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer,batch_size)
-    adversary_generator = init_adversary_generator(train_df)
+    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size)
+    adversary_generator = init_adversary_generator(train_df,random_generate=False)
     learning_rate = 1e-5
     epochs = 5
-
-    train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size, save_name='hc3_mix_ad.pt', adversary_generator=adversary_generator)
-
-
-
-
+    begin_train(
+        train_file,
+        adversary_generator,
+        'hc3_mix_at.pt'
+    )
+    # train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size,
+    #       save_name='hc3_mix_ad.pt', adversary_generator=adversary_generator)
