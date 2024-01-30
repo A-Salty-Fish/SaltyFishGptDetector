@@ -108,22 +108,24 @@ if __name__ == '__main__':
     #      ],
     #     './data/hc3_row'
     # )
-    local_file_map = {
-        'rewrite': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.rewrite.mix.jsonl',
-        'continue': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.continue.mix.jsonl',
-        'academic': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.academic.mix.jsonl',
-        'difficult': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.difficult.mix.jsonl',
-        'easy': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.easy.mix.jsonl',
-        'qa': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.mix.jsonl',
-    }
-    for f in local_file_map:
-        jsons = []
-        with open(local_file_map[f], 'r', encoding='utf-8') as in_f:
-            for line in in_f:
-                jsons.append(json.loads(line))
-        with open(local_file_map[f]+'.train', 'w', encoding='utf-8') as train_f:
-            for obj in jsons[0: int(len(jsons) * 0.2)]:
-                train_f.write(json.dumps(obj) + '\n')
-        with open(local_file_map[f]+'.test', 'w', encoding='utf-8') as test_f:
-            for obj in jsons[int(len(jsons) * 0.2):]:
-                test_f.write(json.dumps(obj) + '\n')
+    # local_file_map = {
+    #     'rewrite': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.rewrite.mix.jsonl',
+    #     'continue': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.continue.mix.jsonl',
+    #     'academic': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.academic.mix.jsonl',
+    #     'difficult': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.difficult.mix.jsonl',
+    #     'easy': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.easy.mix.jsonl',
+    #     'qa': '../../data_collector/test_data/hc3_english_mix_multi/open_qa.mix.jsonl',
+    # }
+    # for f in local_file_map:
+    #     jsons = []
+    #     with open(local_file_map[f], 'r', encoding='utf-8') as in_f:
+    #         for line in in_f:
+    #             jsons.append(json.loads(line))
+    #     with open(local_file_map[f]+'.train', 'w', encoding='utf-8') as train_f:
+    #         for obj in jsons[0: int(len(jsons) * 0.2)]:
+    #             train_f.write(json.dumps(obj) + '\n')
+    #     with open(local_file_map[f]+'.test', 'w', encoding='utf-8') as test_f:
+    #         for obj in jsons[int(len(jsons) * 0.2):]:
+    #             test_f.write(json.dumps(obj) + '\n')
+
+    pass

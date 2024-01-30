@@ -517,6 +517,31 @@ def multi_prompt_hc3_test(multi_domains, multi_prompts):
             output_test_result_table(test_hc3_mix_multi(method, direct_files, 200))
 
 
+def multi_prompt_test_my(method, in_file):
+    classifier = get_classifier(method)
+    all_results = []
+    with open(in_file, 'r', encoding='utf-8') as in_f:
+        in_f_obj = json.load(in_f)
+        for prompt in in_f_obj:
+            prompt_datas = in_f_obj[prompt]
+            prompt_dataset={
+                'human': [],
+                'ai': []
+            }
+            for prompt_data in prompt_datas:
+                if prompt_data['label'] == 0:
+                    prompt_dataset['human'].append(prompt_data)
+                else:
+                    prompt_dataset['ai'].append(prompt_data)
+            prompt_test_result = test_classifier_and_dataset(classifier, data_set=prompt_dataset)
+            prompt_test_result['method'] = method
+            prompt_test_result['prompt'] = prompt
+            all_results.append(prompt_test_result)
+    return all_results
+
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -668,16 +693,17 @@ if __name__ == '__main__':
     # multi_prompt_hc3_test(multi_domains, multi_prompts)
 
 
-    for kn in [3, 5, 7, 9, 11]:
-        direct_files = []
-        for i in range(0, kn):
-            file_name = '../data_collector/test_data/hc3_english_mix_knn/' + str(kn) + '_' + str(i) + '.jsonl'
-            direct_files.append(file_name)
-        for method in support_methods:
-            if method == 'detect_gpt':
-                continue
-            else:
-                output_test_result_table(test_hc3_mix_multi(method, direct_files, 200, 'one_type_jsonl'), method + '_kn_' +str(kn))
+
+    # for kn in [3, 5, 7, 9, 11]:
+    #     direct_files = []
+    #     for i in range(0, kn):
+    #         file_name = '../data_collector/test_data/hc3_english_mix_knn/' + str(kn) + '_' + str(i) + '.jsonl'
+    #         direct_files.append(file_name)
+    #     for method in support_methods:
+    #         if method == 'detect_gpt':
+    #             continue
+    #         else:
+    #             output_test_result_table(test_hc3_mix_multi(method, direct_files, 200, 'one_type_jsonl'), method + '_kn_' +str(kn))
 
     # for epoch in [0, 2, 4, 9]:
     #     output_test_result_table(test_hc3('roberta_result_with_ad_' + str(epoch),
@@ -698,3 +724,5 @@ if __name__ == '__main__':
     #                                        ]
     #                                       ))
 
+    for method in support_methods:
+        output_test_result_table(multi_prompt_test_my(method, '../my_detector/roberta_test/data/hc3_mix_multi_prompt.test'))
