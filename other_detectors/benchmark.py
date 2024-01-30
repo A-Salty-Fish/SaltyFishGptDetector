@@ -522,8 +522,15 @@ def multi_prompt_test_my(method, in_file):
     all_results = []
     with open(in_file, 'r', encoding='utf-8') as in_f:
         in_f_obj = json.load(in_f)
-        for prompt in in_f_obj:
-            prompt_datas = in_f_obj[prompt]
+        prompt_json_map = {}
+        for obj in in_f_obj:
+            if prompt_json_map.get(obj['prompt']) is None:
+                prompt_json_map[obj['prompt']] = [obj]
+            else:
+                prompt_json_map[obj['prompt']].append(obj)
+
+        for prompt in prompt_json_map:
+            prompt_datas = prompt_json_map[prompt]
             prompt_dataset={
                 'human': [],
                 'ai': []
