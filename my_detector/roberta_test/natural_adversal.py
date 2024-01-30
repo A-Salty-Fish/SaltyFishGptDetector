@@ -174,12 +174,13 @@ class AdversaryGenerator:
 
     # 初始化分类好的验证集，模型等参数
     def __init__(self, local_val_files_map, prompts_map, train_df, file_load_func=default_file_load_func,
-                 tmp_data_path='./tmp_ad/', lazy_init=False, random_generate=False):
+                 tmp_data_path='./tmp_ad/', lazy_init=False, random_generate=False, random_select_key=None):
         print("begin init adversary generator")
         begin_time = time.time()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.random_generate = random_generate
+        self.random_select_key = random_select_key
         self.lazy_init = lazy_init
         if not lazy_init:
             chat_model, chat_tokenizer = self.init_adversary_model_and_tokenizer()
@@ -292,23 +293,28 @@ class AdversaryGenerator:
 
         adversary_train_datas = []
 
-        for key in adversary_nums_map:
-            print('generate process : [%d/%d]' % (row_data_index, batch_size), end='\r')
-            prompt_template = prompts_map[key]
-            for i in range(0, adversary_nums_map[key]):
-                row_train_data = row_train_datas[row_data_index]
+        if self.random_select_key is not None:
+            key_eval_datas = self.val_data_map[self.random_select_key]
+            random.shuffle(key_eval_datas)
+            adversary_train_datas = key_eval_datas[0: batch_size]
+        else:
+            for key in adversary_nums_map:
+                print('generate process : [%d/%d]' % (row_data_index, batch_size), end='\r')
+                prompt_template = prompts_map[key]
+                for i in range(0, adversary_nums_map[key]):
+                    row_train_data = row_train_datas[row_data_index]
 
-                if self.random_generate:
-                    chat_text = "please write something based on following content, {without any useless content}:" + row_train_data['content']
-                else:
-                    chat_text = prompt_template + row_train_data['content']
-                chat_result = self.generate_chat_context(chat_text)
-                adversary_train_datas.append({
-                    'label': 1,
-                    'content': chat_result,
-                    'prompt': key
-                })
-                row_data_index += 1
+                    if self.random_generate:
+                        chat_text = "please write something based on following content, {without any useless content}:" + row_train_data['content']
+                    else:
+                        chat_text = prompt_template + row_train_data['content']
+                    chat_result = self.generate_chat_context(chat_text)
+                    adversary_train_datas.append({
+                        'label': 1,
+                        'content': chat_result,
+                        'prompt': key
+                    })
+                    row_data_index += 1
 
         print('generate finish: ' + str(time.time() - begin_time))
 
