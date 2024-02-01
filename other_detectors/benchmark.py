@@ -732,4 +732,6 @@ if __name__ == '__main__':
     #                                       ))
 
     for method in support_methods:
+        if method != 'detect_gpt':
+            continue
         output_test_result_table(multi_prompt_test_my(method, '../my_detector/roberta_test/data/hc3_mix_multi_prompt.test'))
