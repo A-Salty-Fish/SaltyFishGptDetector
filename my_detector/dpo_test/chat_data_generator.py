@@ -39,17 +39,22 @@ def chat(model, tokenizer, context):
     # print("generate response successful: " + str(end_time - start_time))
     return decoded[0].split('[/INST]')[1].replace('</s>', '')
 
-def batch_generate_contents(model, tokenizer):
+def batch_generate_contents(model, tokenizer, nums=10):
     prompt_template = 'Please rewrite the following AI-generated text to make it more like human text, {without any useless content}: '
     in_jsons = []
+    index = 0
     with open('../../data_collector/test_data/hc3_english_mix_multi/wiki_csai.mix.jsonl', 'r', encoding='utf-8') as in_f:
         for line in in_f:
             in_jsons.append(json.loads(line))
     with open('./wiki_csai.mix.human.jsonl', 'a', encoding='utf-8') as out_f:
         for in_json in in_jsons:
+            index += 1
+            print(str(index))
             out_json = in_json
-            out_json['ai_rewrite'] = chat(model, tokenizer, prompt_template + in_json['ai'])
-            out_f.write(json.dumps(out_json) + '\n')
+            for i in range(0, nums):
+                out_json['ai_rewrite'] = chat(model, tokenizer, prompt_template + in_json['ai'])
+                out_f.write(json.dumps(out_json) + '\n')
+
 
 if __name__ == '__main__':
     model, tokenizer = init_model_and_tokenizer()
