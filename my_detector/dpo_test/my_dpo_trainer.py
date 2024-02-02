@@ -35,16 +35,19 @@ def load_trainer_args():
 
 def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2"):
     all_begin_time = time.time()
+
     begin_time = time.time()
     model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16,
                                                  trust_remote_code=True).to("cuda:0")
     print("load model success: " + str(time.time() - begin_time))
+
     begin_time = time.time()
     ref_model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16,
-                                                     trust_remote_code=True)
+                                                     trust_remote_code=True).to("cuda:0")
     print("load ref_model success: " + str(time.time() - begin_time))
+
     begin_time = time.time()
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False, trust_remote_code=True).to("cuda:0")
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False, trust_remote_code=True)
     print("load tokenizer success: " + str(time.time() - begin_time))
 
     print("load all success: " + str(time.time() - all_begin_time))
