@@ -66,16 +66,16 @@ if __name__ == '__main__':
     model, tokenizer = init_model_and_tokenizer()
     print('open_qa')
     batch_generate_contents(model, tokenizer,
-                            '../../data_collector/test_data/hc3_english_mix_multi/open_qa.mix.jsonl'
+                            '../../data_collector/test_data/hc3_english_mix_multi/open_qa.mix.jsonl',
                             './open_qa.mix.human.jsonl'
                             )
     print('finance')
     batch_generate_contents(model, tokenizer,
-                            '../../data_collector/test_data/hc3_english_mix_multi/finance.mix.jsonl'
+                            '../../data_collector/test_data/hc3_english_mix_multi/finance.mix.jsonl',
                             './finance.mix.human.jsonl'
                             )
     print('medicine')
     batch_generate_contents(model, tokenizer,
-                            '../../data_collector/test_data/hc3_english_mix_multi/medicine.mix.jsonl'
+                            '../../data_collector/test_data/hc3_english_mix_multi/medicine.mix.jsonl',
                             './medicine.mix.human.jsonl'
                             )
