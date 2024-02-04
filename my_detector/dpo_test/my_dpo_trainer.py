@@ -47,8 +47,8 @@ def load_trainer_args():
     train_args.ddp_find_unused_parameters = False
     train_args.remove_unused_columns = False
     train_args.logging_steps = 100
-    train_args.per_device_train_batch_size = 2
-    train_args.per_device_eval_batch_size = 2
+    train_args.per_device_train_batch_size = 1
+    train_args.per_device_eval_batch_size = 1
     return train_args
 
 
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
     train_dataset = datasets.load_dataset('json', data_files={'train': './data/wiki_csai.mix.train'})['train']
 
-    model, ref_model, tokenizer = load_model("microsoft/phi-2")
+    model, ref_model, tokenizer = load_model()
     tokenizer.pad_token = tokenizer.eos_token
 
     # tarin_dataset = Dataset.from_generator(
