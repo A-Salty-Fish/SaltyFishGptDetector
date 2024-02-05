@@ -98,6 +98,28 @@ def convert_hc3_jsonls_to_train_and_test_json(jsonl_files, target_json_file, tra
 
 
 if __name__ == '__main__':
+
+    jsons = []
+    with open('../../data_collector/test_data/hc3_plus_english/test_hc3_QA.jsonl', 'r', encoding='utf-8') as q_in_f:
+        for line in q_in_f:
+            row_obj = json.loads(line)
+            jsons.append({
+                'content': row_obj['text'],
+                'label': row_obj['label']
+            })
+    with open('./data/hc3_plus_qa_row.test', 'w', encoding='utf-8') as q_out_f:
+        q_out_f.write(json.dumps(jsons))
+    jsons = []
+    with open('../../data_collector/test_data/hc3_plus_english/test_hc3_si.jsonl', 'r', encoding='utf-8') as si_in_f:
+        for line in si_in_f:
+            row_obj = json.loads(line)
+            jsons.append({
+                'content': row_obj['text'],
+                'label': row_obj['label']
+            })
+    with open('./data/hc3_plus_si_row.test', 'w', encoding='utf-8') as si_out_f:
+        si_out_f.write(json.dumps(jsons))
+
     # convet_multi_domain_prompt()
     # convert_hc3_jsonls_to_train_and_test_json(
     #     [

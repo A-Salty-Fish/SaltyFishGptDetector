@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
@@ -180,7 +182,8 @@ if __name__ == '__main__':
 
 
     save_model = 'hc3_mix_at.pt'
-    test_file = './data/hc3_mix_multi_prompt.test'
+    test_file = './data/hc3_plus_qa_row.test'
+    # test_file = './data/hc3_plus_qa_row.test'
     # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
     # text_predictions = get_text_predictions(model, test_dataloader)
