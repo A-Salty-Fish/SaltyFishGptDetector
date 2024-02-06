@@ -97,29 +97,33 @@ def convert_hc3_jsonls_to_train_and_test_json(jsonl_files, target_json_file, tra
         train_output.write(json.dumps(train_jsons))
 
 
-if __name__ == '__main__':
-    # 处理hc3 plus数据集
-    # jsons = []
-    # with open('../../data_collector/test_data/hc3_plus_english/test_hc3_QA.jsonl', 'r', encoding='utf-8') as q_in_f:
-    #     for line in q_in_f:
-    #         row_obj = json.loads(line)
-    #         jsons.append({
-    #             'content': row_obj['text'],
-    #             'label': row_obj['label']
-    #         })
-    # with open('./data/hc3_plus_qa_row.test', 'w', encoding='utf-8') as q_out_f:
-    #     q_out_f.write(json.dumps(jsons))
-    # jsons = []
-    # with open('../../data_collector/test_data/hc3_plus_english/test_hc3_si.jsonl', 'r', encoding='utf-8') as si_in_f:
-    #     for line in si_in_f:
-    #         row_obj = json.loads(line)
-    #         jsons.append({
-    #             'content': row_obj['text'],
-    #             'label': row_obj['label']
-    #         })
-    # with open('./data/hc3_plus_si_row.test', 'w', encoding='utf-8') as si_out_f:
-    #     si_out_f.write(json.dumps(jsons))
+def convert_hc3_plus():
 
+
+    #处理hc3 plus数据集
+    jsons = []
+    with open('../../data_collector/test_data/hc3_plus_english/test_hc3_QA.jsonl', 'r', encoding='utf-8') as q_in_f:
+        for line in q_in_f:
+            row_obj = json.loads(line)
+            jsons.append({
+                'content': row_obj['text'],
+                'label': row_obj['label']
+            })
+    with open('./data/hc3_plus_qa_row.test', 'w', encoding='utf-8') as q_out_f:
+        q_out_f.write(json.dumps(jsons))
+    jsons = []
+    with open('../../data_collector/test_data/hc3_plus_english/test_hc3_si.jsonl', 'r', encoding='utf-8') as si_in_f:
+        for line in si_in_f:
+            row_obj = json.loads(line)
+            jsons.append({
+                'content': row_obj['text'],
+                'label': row_obj['label']
+            })
+    with open('./data/hc3_plus_si_row.test', 'w', encoding='utf-8') as si_out_f:
+        si_out_f.write(json.dumps(jsons))
+
+
+def convert_cheat():
     # 处理cheat数据集
     jsons = []
     with open('../../data_collector/test_data/CHEAT/ieee-chatgpt-generation.jsonl', 'r', encoding='utf-8') as q_in_f:
@@ -155,6 +159,30 @@ if __name__ == '__main__':
             })
     with open('./data/cheat_polish.test', 'w', encoding='utf-8') as si_out_f:
         si_out_f.write(json.dumps(jsons))
+
+
+def convert_ghostbuster():
+    # 处理ghostbuster数据集
+    jsons = []
+    with open('../../data_collector/test_data/ghostbuster/essay_claude.txt', 'r', encoding='utf-8') as q_in_f:
+        for line in q_in_f:
+            jsons.append({
+                'label': 1,
+                'content': line
+            })
+    with open('../../data_collector/test_data/ghostbuster/essay_human.txt', 'r', encoding='utf-8') as q_in_f:
+        for line in q_in_f:
+            jsons.append({
+                'label': 0,
+                'content': line
+            })
+    with open('./data/ghostbuster_claude.test', 'w', encoding='utf-8') as si_out_f:
+        si_out_f.write(json.dumps(jsons))
+
+if __name__ == '__main__':
+
+    convert_ghostbuster()
+
 
 
     # convet_multi_domain_prompt()
