@@ -108,9 +108,18 @@ def get_acc(predictions, test_labels, domains, prompts):
 
     for prompt in prompt_results:
         prompt_result = prompt_results[prompt]
-        prompt_result['ai_acc_r'] = prompt_result['ai_acc'] / prompt_result['ai_total']
-        prompt_result['human_acc_r'] = prompt_result['human_acc'] / prompt_result['human_total']
-        prompt_result['total_acc_r'] = (prompt_result['human_acc'] + prompt_result['ai_acc']) / (
+        if prompt_result['ai_total'] == 0:
+            prompt_result['ai_acc_r'] = 0
+        else:
+            prompt_result['ai_acc_r'] = prompt_result['ai_acc'] / prompt_result['ai_total']
+        if prompt_result['human_total'] == 0:
+            prompt_result['human_acc_r'] = 0
+        else:
+            prompt_result['human_acc_r'] = prompt_result['human_acc'] / prompt_result['human_total']
+        if  (prompt_result['human_total'] + prompt_result['ai_total']) == 0:
+            prompt_result['total_acc_r'] = 0
+        else:
+            prompt_result['total_acc_r'] = (prompt_result['human_acc'] + prompt_result['ai_acc']) / (
                     prompt_result['human_total'] + prompt_result['ai_total'])
 
     return {
@@ -182,7 +191,7 @@ if __name__ == '__main__':
 
 
     save_model = 'hc3_mix_at.pt'
-    test_file = './data/ghostbuster_claude.test'
+    test_file = './data/m4_all.test'
     # test_file = './data/hc3_plus_qa_row.test'
     # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)

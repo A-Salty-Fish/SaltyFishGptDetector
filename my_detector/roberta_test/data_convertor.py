@@ -179,9 +179,49 @@ def convert_ghostbuster():
     with open('./data/ghostbuster_claude.test', 'w', encoding='utf-8') as si_out_f:
         si_out_f.write(json.dumps(jsons))
 
+def convert_m4():
+    base_dir = '../../data_collector/test_data/m4/'
+    files = [
+        # 'reddit_bloomz',
+        'reddit_chatGPT',
+        'reddit_cohere',
+        'reddit_davinci',
+        'reddit_dolly',
+        'reddit_flant5',
+        'wikipedia_bloomz',
+        'wikipedia_chatgpt',
+        'wikipedia_cohere',
+        'wikipedia_davinci',
+        'wikipedia_dolly',
+    ]
+    jsons = []
+    for file in files:
+        with open(base_dir + file + '.jsonl', 'r', encoding='utf-8') as in_f:
+            print(file)
+            for line in in_f:
+                try:
+                    json_obj = json.loads(line)
+                    jsons.append({
+                        'label': 1,
+                        'content': json_obj['machine_text'],
+                        'prompt': file
+                    })
+                    jsons.append({
+                        'label': 0,
+                        'content': json_obj['human_text'],
+                        'prompt': file
+                    })
+                except Exception as e:
+                    print(e)
+    with open('./data/m4_all.test', 'w', encoding='utf-8') as out_f:
+        out_f.write(json.dumps(jsons))
+
 if __name__ == '__main__':
 
-    convert_ghostbuster()
+    # convert_hc3_plus()
+    # convert_cheat()
+    # convert_ghostbuster()
+    convert_m4()
 
 
 
