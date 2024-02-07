@@ -10,6 +10,7 @@ import csv
 import datetime
 import json
 import random
+import re
 import time
 from functools import partial
 
@@ -157,13 +158,13 @@ def get_classifier(method):
                 return classifier(text[0: 500])
             except Exception as e:
                 print(e)
-                print(text)
+                # print(text)
                 return True
         try:
             return classifier(text)
         except Exception as e:
             print(e)
-            print(text)
+            print("error text: "+text)
             return out_classifier(text[0: int(len(text) * 3 / 4)], retry_times - 1)
 
     return out_classifier
@@ -250,25 +251,22 @@ def test_classifier_and_dataset(classifier, data_set):
         i += 1
         content = data['content']
         label = data['label']
-        pred_label = classifier(content)
-        if label == 0:
-            try:
+        try:
+            pred_label = classifier(content)
+            if label == 0:
                 if pred_label:
                     human_true += 1
                 human_total += 1
-            except Exception as e:
-                print(e)
-                print(content)
-        elif label == 1:
-            try:
+
+            elif label == 1:
                 if not pred_label:
                     ai_true += 1
                 ai_total += 1
-            except Exception as e:
-                print(e)
-                print(content)
-        percent = round(1.0 * (i) / len(all_data) * 100, 2)
-        print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
+            percent = round(1.0 * (i) / len(all_data) * 100, 2)
+            print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
+        except Exception as e:
+            print(e)
+            print('error content:' + content)
     print("test process end", end='\n')
 
     if human_total != 0:
@@ -445,7 +443,7 @@ def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl
                         'label': 1,
                         'content': json_obj['ai']
                     })
-            else:
+            elif file_type == 'one_type_jsonl':
                 json_arr = []
                 for line in f:
                     json_obj = json.loads(line)
@@ -453,16 +451,25 @@ def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl
                         'label': json_obj['label'],
                         'content': json_obj['content']
                     })
-        random.shuffle(json_arr)
-        test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:nums]
-        test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:nums]
+            elif file_type == 'json_arr':
+                json_arr = json.load(f)
+
+        # random.shuffle(json_arr)
+        if nums >= 0:
+            test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:nums]
+            test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:nums]
+        else:
+            test_datas['human'] = [x for x in json_arr if x['label'] == 0]
+            test_datas['ai'] = [x for x in json_arr if x['label'] == 1]
         # 截断过长的数据
         for i in range(0, len(test_datas['human'])):
-            words = test_datas['human'][i]['content'].split(' ')
+            words = re.split(r'\s+|\n|\r', test_datas['human'][i]['content'])
+            words = [x for x in words if len(x) <= 10]
             if len(words) > 500:
                 test_datas['human'][i]['content'] = " ".join(words[0: 500])
         for i in range(0, len(test_datas['ai'])):
-            words = test_datas['ai'][i]['content'].split(' ')
+            words =re.split(r'\s+|\n|\r', test_datas['ai'][i]['content'])
+            words = [x for x in words if len(x) <= 10]
             if len(words) > 500:
                 test_datas['ai'][i]['content'] = " ".join(words[0: 500])
 
@@ -731,7 +738,54 @@ if __name__ == '__main__':
     #                                        ]
     #                                       ))
 
-    for method in support_methods:
-        if method != 'detect_gpt':
-            continue
-        output_test_result_table(multi_prompt_test_my(method, '../my_detector/roberta_test/data/hc3_mix_multi_prompt.test'))
+    # for method in support_methods:
+    #     if method != 'detect_gpt':
+    #         continue
+    #     output_test_result_table(multi_prompt_test_my(method, '../my_detector/roberta_test/data/hc3_mix_multi_prompt.test'))
+
+    base_dir = '../my_detector/roberta_test/data/'
+    files = [
+        'cheat_generation.test',
+        'cheat_polish.test',
+        'ghostbuster_claude.test',
+        'hc3_plus_qa_row.test',
+        'open_qa.academic.test',
+        'open_qa.continue.test',
+        'open_qa.difficult.test',
+        'open_qa.easy.test',
+        'open_qa.test',
+        'open_qa.rewrite.test',
+        'reddit_chatGPT.test',
+        'reddit_cohere.test',
+        'reddit_davinci.test',
+        'reddit_dolly.test',
+        'reddit_flant5.test',
+        'wikipedia_chatgpt.test',
+        'wikipedia_cohere.test',
+        'wikipedia_davinci.test',
+        'wikipedia_dolly.test',
+    ]
+    # # test file existed
+    for file in files:
+        with open(base_dir + file, 'r', encoding='utf-8') as test_f:
+            print(file)
+        tmp_result = test_hc3_mix_multi('gltr',
+                                        [
+                                            base_dir + file for file in files
+                                        ],
+                                        -1,
+                                        'json_arr'
+                                        )
+
+    # for method in support_methods:
+    #     if method == 'detect_gpt':
+    #         continue
+    #     else:
+    #         tmp_result = test_hc3_mix_multi(method,
+    #                                         [
+    #                                             base_dir + file for file in files
+    #                                         ],
+    #                                         -1,
+    #                                         'json_arr'
+    #                                         )
+    #         output_test_result_table(tmp_result, 'adt_' +  method)

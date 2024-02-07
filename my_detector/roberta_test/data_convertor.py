@@ -188,7 +188,7 @@ def convert_m4():
         'reddit_davinci',
         'reddit_dolly',
         'reddit_flant5',
-        'wikipedia_bloomz',
+        # 'wikipedia_bloomz',
         'wikipedia_chatgpt',
         'wikipedia_cohere',
         'wikipedia_davinci',
