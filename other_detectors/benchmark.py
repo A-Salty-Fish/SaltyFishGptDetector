@@ -157,14 +157,14 @@ def get_classifier(method):
             try:
                 return classifier(text[0: 500])
             except Exception as e:
-                # print(e)
+                print(e)
                 # print(text)
                 return True
         try:
             return classifier(text)
         except Exception as e:
             # print(e)
-            print("error text: "+text)
+            # print("error text: "+text)
             return out_classifier(text[0: int(len(text) * 3 / 4)], retry_times - 1)
 
     return out_classifier
@@ -766,33 +766,33 @@ if __name__ == '__main__':
         'wikipedia_dolly.test',
     ]
     # # test file existed
-    # for file in files:
-    #     with open(base_dir + file, 'r', encoding='utf-8') as test_f:
-    #         print(file)
-    #     tmp_result = test_hc3_mix_multi('gltr',
-    #                                     [
-    #                                         base_dir + file for file in files
-    #                                     ],
-    #                                     1000,
-    #                                     'json_arr'
-    #                                     )
-    tmp_result = test_hc3_mix_multi('gltr',
-                                    [
-                                        base_dir + 'ghostbuster_claude.test'
-                                    ],
-                                    -1,
-                                    'json_arr'
-                                    )
+    for file in files:
+        with open(base_dir + file, 'r', encoding='utf-8') as test_f:
+            print(file)
+        # tmp_result = test_hc3_mix_multi('gltr',
+        #                                 [
+        #                                     base_dir + file for file in files
+        #                                 ],
+        #                                 -1,
+        #                                 'json_arr'
+        #                                 )
+    # tmp_result = test_hc3_mix_multi('gltr',
+    #                                 [
+    #                                     base_dir + 'ghostbuster_claude.test'
+    #                                 ],
+    #                                 -1,
+    #                                 'json_arr'
+    #                                 )
 
-    # for method in support_methods:
-    #     if method == 'detect_gpt':
-    #         continue
-    #     else:
-    #         tmp_result = test_hc3_mix_multi(method,
-    #                                         [
-    #                                             base_dir + file for file in files
-    #                                         ],
-    #                                         -1,
-    #                                         'json_arr'
-    #                                         )
-    #         output_test_result_table(tmp_result, 'adt_' +  method)
+    for method in support_methods:
+        if method == 'detect_gpt':
+            continue
+        else:
+            tmp_result = test_hc3_mix_multi(method,
+                                            [
+                                                base_dir + file for file in files
+                                            ],
+                                            -1,
+                                            'json_arr'
+                                            )
+            output_test_result_table(tmp_result, 'adt_' +  method)
