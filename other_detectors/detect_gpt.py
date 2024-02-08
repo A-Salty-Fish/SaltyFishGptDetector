@@ -48,7 +48,7 @@ np.random.seed(0)
 
 # find a better way to abstract the class
 class GPT2PPLV2:
-    def __init__(self, device="cuda", model_id="gpt2-medium"):
+    def __init__(self, device="cuda", model_id="gpt2-medium", t5_model_id="t5-large"):
         self.device = device
         self.model_id = model_id
         self.model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
@@ -58,8 +58,8 @@ class GPT2PPLV2:
         self.stride = 51
         self.threshold = 0.7
 
-        self.t5_model = transformers.AutoModelForSeq2SeqLM.from_pretrained("t5-large").to(device).half()
-        self.t5_tokenizer = T5Tokenizer.from_pretrained("t5-large", model_max_length=512)
+        self.t5_model = transformers.AutoModelForSeq2SeqLM.from_pretrained(t5_model_id).to(device).half()
+        self.t5_tokenizer = T5Tokenizer.from_pretrained(t5_model_id, model_max_length=512)
 
     def apply_extracted_fills(self, masked_texts, extracted_fills):
         texts = []
@@ -395,7 +395,7 @@ p        and print the perplexity of the total sentence
 
 
 def init_model():
-    model = GPT2PPLV2()
+    model = GPT2PPLV2(model_id="gpt2", t5_model_id="t5-base")
     return model
 
 def classify_is_human(model, text, bar = 0.6000):
