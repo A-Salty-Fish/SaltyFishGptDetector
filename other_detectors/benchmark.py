@@ -152,18 +152,18 @@ def get_classifier(method):
         print("None Method")
         return None
 
-    def out_classifier(text: str, retry_times=3):
+    def out_classifier(text: str, retry_times=1):
         if retry_times == 0:
             try:
                 return classifier(text[0: 500])
             except Exception as e:
-                print(e)
+                # print(e)
                 # print(text)
                 return True
         try:
             return classifier(text)
         except Exception as e:
-            print(e)
+            # print(e)
             print("error text: "+text)
             return out_classifier(text[0: int(len(text) * 3 / 4)], retry_times - 1)
 
@@ -364,12 +364,12 @@ def test_hc3(method, direct_files):
         # 截断过长的数据
         for i in range(0, len(test_datas['human'])):
             words = test_datas['human'][i]['content'].split(' ')
-            if len(words) > 500:
-                test_datas['human'][i]['content'] = " ".join(words[0: 500])
+            if len(words) > 400:
+                test_datas['human'][i]['content'] = " ".join(words[0: 400])
         for i in range(0, len(test_datas['ai'])):
             words = test_datas['ai'][i]['content'].split(' ')
-            if len(words) > 500:
-                test_datas['ai'][i]['content'] = " ".join(words[0: 500])
+            if len(words) > 400:
+                test_datas['ai'][i]['content'] = " ".join(words[0: 400])
 
         test_result = test_classifier_and_dataset(classifier, test_datas)
         print(test_result)
@@ -463,15 +463,15 @@ def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl
             test_datas['ai'] = [x for x in json_arr if x['label'] == 1]
         # 截断过长的数据
         for i in range(0, len(test_datas['human'])):
-            words = re.split(r'\s+|\n|\r', test_datas['human'][i]['content'])
-            words = [x for x in words if len(x) <= 10]
-            if len(words) > 500:
-                test_datas['human'][i]['content'] = " ".join(words[0: 500])
+            words = re.split(r'\s+|\n|\r|\t', test_datas['human'][i]['content'])
+            if len(words) > 400:
+                words = [x for x in words if len(x) <= 10 and x != ' ' and len(x.strip()) != 0]
+                test_datas['human'][i]['content'] = " ".join(words[0: 400])
         for i in range(0, len(test_datas['ai'])):
-            words =re.split(r'\s+|\n|\r', test_datas['ai'][i]['content'])
-            words = [x for x in words if len(x) <= 10]
-            if len(words) > 500:
-                test_datas['ai'][i]['content'] = " ".join(words[0: 500])
+            words = re.split(r'\s+|\n|\r|\t', test_datas['ai'][i]['content'])
+            if len(words) > 400:
+                words = [x for x in words if len(x) <= 10 and x != ' ' and len(x.strip()) != 0]
+                test_datas['ai'][i]['content'] = " ".join(words[0: 400])
 
         test_result = test_classifier_and_dataset(classifier, test_datas)
         print(test_result)
@@ -766,16 +766,23 @@ if __name__ == '__main__':
         'wikipedia_dolly.test',
     ]
     # # test file existed
-    for file in files:
-        with open(base_dir + file, 'r', encoding='utf-8') as test_f:
-            print(file)
-        tmp_result = test_hc3_mix_multi('gltr',
-                                        [
-                                            base_dir + file for file in files
-                                        ],
-                                        -1,
-                                        'json_arr'
-                                        )
+    # for file in files:
+    #     with open(base_dir + file, 'r', encoding='utf-8') as test_f:
+    #         print(file)
+    #     tmp_result = test_hc3_mix_multi('gltr',
+    #                                     [
+    #                                         base_dir + file for file in files
+    #                                     ],
+    #                                     1000,
+    #                                     'json_arr'
+    #                                     )
+    tmp_result = test_hc3_mix_multi('gltr',
+                                    [
+                                        base_dir + 'ghostbuster_claude.test'
+                                    ],
+                                    -1,
+                                    'json_arr'
+                                    )
 
     # for method in support_methods:
     #     if method == 'detect_gpt':

@@ -1,6 +1,7 @@
 # 用来将不同格式的数据集统一格式
 import json
 import os
+import re
 
 
 # 统一后的格式为
@@ -154,5 +155,18 @@ if __name__ == '__main__':
     # print(len(convert_hc3_english('..\\data_collector\\test_data\\hc3_english')))
     # print(len(convert_hc3_plus_english('..\\data_collector\\test_data\\hc3_plus_english')))
     # print(len(convert_m4('..\\data_collector\\test_data\\m4')))
-    print(len(convert_arxiv_cs('../data_collector/test_data/arxiv_cs/', 'rewrite_1.jsonl')))
+    # print(len(convert_arxiv_cs('../data_collector/test_data/arxiv_cs/', 'rewrite_1.jsonl')))
+    base_dir = '../my_detector/roberta_test/data/'
+    with open(base_dir + 'ghostbuster_claude.test', 'r', encoding='utf-8') as in_f:
+        json_arr = json.load(in_f)
+        for json_obj in json_arr:
+            if json_obj['content'].find('Mental Health Service Manager') != -1:
+
+                words = re.split(r'\s+|\n|\r|\t', json_obj['content'])
+                if len(words) > 400:
+                    words = [x for x in words if len(x) <= 10 and x != ' ' and len(x.strip()) != 0]
+                    test_text = " ".join(words[0: 400])
+                print(len(words))
+                print(test_text)
+
     pass
