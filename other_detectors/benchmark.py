@@ -24,6 +24,7 @@ import openai_roberta_base
 import openai_roberta_large
 import radar_vicuna
 import roberta_adt
+import IntrinsicDim
 
 support_methods = [
     'gltr',
@@ -86,10 +87,10 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'intrinsic-dim':
-        model = hc3_single.init_classifier()
+        model = IntrinsicDim.init_phd_model()
 
         def classify(text):
-            return hc3_single.classify_is_human(model, text=text)
+            return IntrinsicDim.classify_is_human(model, text=text)
 
         classifier = classify
 
@@ -155,7 +156,8 @@ def get_classifier(method):
     def out_classifier(text: str, retry_times=1):
         if retry_times == 0:
             try:
-                return classifier(text[0: 500])
+                words = re.split(r'\s+|\n|\r|\t', text)
+                return classifier(" ".join(words[0:200]))
             except Exception as e:
                 print(e)
                 # print(text)
@@ -165,7 +167,8 @@ def get_classifier(method):
         except Exception as e:
             # print(e)
             # print("error text: "+text)
-            return out_classifier(text[0: int(len(text) * 3 / 4)], retry_times - 1)
+            words = re.split(r'\s+|\n|\r|\t', text)
+            return out_classifier(" ".join(words[0:int(len(words) * 3/ 4)]), retry_times - 1)
 
     return out_classifier
 
@@ -785,14 +788,14 @@ if __name__ == '__main__':
     #                                 )
 
     for method in support_methods:
-        if method == 'detect_gpt':
+        if method != 'intrinsic-dim':
             continue
         else:
             tmp_result = test_hc3_mix_multi(method,
                                             [
                                                 base_dir + file for file in files
                                             ],
-                                            -1,
+                                            1000,
                                             'json_arr'
                                             )
             output_test_result_table(tmp_result, 'adt_' +  method)

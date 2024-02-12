@@ -282,7 +282,7 @@ def init_phd_model(metric='euclidean', n_points=9):
 
 def classify_is_human(phd, text, bar=5):
     # phd = PHD(metric='euclidean', n_points=9)
-    score = get_phd_single(sample_text, phd)
+    score = get_phd_single(text, phd)
     if score > bar:
         return False
     else:
