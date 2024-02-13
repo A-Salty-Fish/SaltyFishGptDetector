@@ -34,17 +34,10 @@ def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shu
 
 
 class MyDataset(Dataset):
-    def __init__(self, dataframe, tokenizer):
+    def __init__(self, dataframe, tokenizer, max_nums=None):
 
         texts = [x['content'] for i, x in dataframe.iterrows()]
-        print("begin tokenize datas")
-        self.texts = [tokenizer(text, padding='max_length',
-                                max_length=256,
-                                truncation=True,
-                                return_tensors="pt")
-                      for text in texts]
 
-        print("end tokenize datas")
         self.labels = [x['label'] for i, x in dataframe.iterrows()]
 
         self.domains = []
@@ -64,6 +57,55 @@ class MyDataset(Dataset):
                     self.prompts.append(x['prompt'])
             except Exception as e:
                 self.prompts.append('default')
+
+        if max_nums is None:
+            print("begin tokenize datas")
+            self.texts = [tokenizer(text, padding='max_length',
+                                    max_length=256,
+                                    truncation=True,
+                                    return_tensors="pt")
+                          for text in texts]
+
+            print("end tokenize datas")
+        else:
+            tmp_objs = []
+            for i in range(0, len(self.labels)):
+                tmp_objs.append(
+                    {
+                        'label': self.labels[i],
+                        'text': texts[i],
+                        'domain': self.domains[i],
+                        'prompt': self.prompts[i],
+                    }
+                )
+            print("tmp objs len:" + str(len(tmp_objs)))
+            tmp_objs_map = {}
+            for tmp_obj in tmp_objs:
+                if tmp_objs_map.get(tmp_obj['prompt']) is None:
+                    tmp_objs_map[tmp_obj['prompt']] = [tmp_obj]
+                else:
+                    tmp_objs_map[tmp_obj['prompt']].append(tmp_obj)
+
+            result_objs = []
+            for key in tmp_objs_map:
+                tmp_human_objs = [x for x in tmp_objs_map[key] if x['label'] == 0][0: max_nums]
+                tmp_ai_objs = [x for x in tmp_objs_map[key] if x['label'] == 1][0: max_nums]
+                result_objs += tmp_ai_objs+tmp_human_objs
+                print(f"{key}:{len(tmp_ai_objs)}:{len(tmp_human_objs)}")
+
+            self.labels = [x['label'] for x in result_objs]
+            tmp_texts = [x['text'] for x in result_objs]
+            self.domains = [x['domain'] for x in result_objs]
+            self.prompts = [x['prompt'] for x in result_objs]
+
+            print("begin tokenize datas")
+            self.texts = [tokenizer(text, padding='max_length',
+                                    max_length=256,
+                                    truncation=True,
+                                    return_tensors="pt")
+                          for text in tmp_texts]
+
+            print("end tokenize datas")
 
     def __getitem__(self, idx):
         text = self.texts[idx]
