@@ -35,7 +35,7 @@ def get_text_predictions(model, loader, bar=0.5):
 def init_test_model_and_tokenizer(base_model_name="roberta-base", test_model_path='best_model.pt'):
     # BERT_MODEL = "roberta-base"
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-    base_model = AutoModel.from_pretrained(base_model_name)
+    # base_model = AutoModel.from_pretrained(base_model_name)
     model = (torch.load(test_model_path))
     # model = MyClassifier(base_model)
     model.eval()
