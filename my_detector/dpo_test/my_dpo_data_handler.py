@@ -147,14 +147,14 @@ if __name__ == '__main__':
     text1 = "This is the first text"
     text2 = "This is the second text"
 
-    cosine_similarity = calculate_cosine_similarity(text1, text2)
-    print("Cosine Similarity between the two texts:", cosine_similarity)
+    cosine_sim = calculate_cosine_similarity(text1, text2)
+    print("Cosine Similarity between the two texts:", cosine_sim)
 
-    euclidean_distance = calculate_euclidean_distance(text1, text2)
-    print("Euclidean Distance between the two texts:", euclidean_distance)
+    euclidean_dist = calculate_euclidean_distance(text1, text2)
+    print("Euclidean Distance between the two texts:", euclidean_dist)
 
-    edit_distance = calculate_edit_distance(text1, text2)
-    print("Minimum Edit Distance between the two texts:", edit_distance)
+    edit_dist = calculate_edit_distance(text1, text2)
+    print("Minimum Edit Distance between the two texts:", edit_dist)
 
     model,tokenizer = init_bleu_model_and_tokenizer()
     print(get_all_score(model, tokenizer, text1, text2))
