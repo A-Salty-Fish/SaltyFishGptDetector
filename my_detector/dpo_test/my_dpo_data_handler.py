@@ -138,7 +138,7 @@ def get_rouge_score(rouge_scorer, text1, text2):
     #         }
     #     }
     # ]
-    return rouge_scorer.get_scores(hypothesis, reference)
+    return rouge_scorer.get_scores(hypothesis, reference)[0]['rouge-1']
 
 
 
