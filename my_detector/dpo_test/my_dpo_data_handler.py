@@ -5,6 +5,7 @@ import numpy as np
 
 # https://huggingface.co/lucadiliello/BLEURT-20
 # pip install git+https://github.com/lucadiliello/bleurt-pytorch.git
+# pip install rouge
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -107,6 +108,38 @@ def get_all_score(bleu_model, bleu_tokenizer, text1, text2):
         'bleu': bleu_score,
     }
 
+# rouge
+from rouge import Rouge
+
+def init_rouge_scorer():
+    rouge = Rouge()
+    return rouge
+
+def get_rouge_score(rouge_scorer, text1, text2):
+    # text1: hypothesis
+    # text2: reference
+    # result:
+    # [
+    #     {
+    #         "rouge-1": {
+    #             "f": 0.4786324739396596,
+    #             "p": 0.6363636363636364,
+    #             "r": 0.3835616438356164
+    #         },
+    #         "rouge-2": {
+    #             "f": 0.2608695605353498,
+    #             "p": 0.3488372093023256,
+    #             "r": 0.20833333333333334
+    #         },
+    #         "rouge-l": {
+    #             "f": 0.44705881864636676,
+    #             "p": 0.5277777777777778,
+    #             "r": 0.3877551020408163
+    #         }
+    #     }
+    # ]
+    return rouge_scorer.get_scores(hypothesis, reference)
+
 
 
 if __name__ == '__main__':
@@ -125,4 +158,10 @@ if __name__ == '__main__':
 
     model,tokenizer = init_bleu_model_and_tokenizer()
     print(get_all_score(model, tokenizer, text1, text2))
+
+    hypothesis = "the #### transcript is a written version of each day 's cnn student news program use this transcript to he    lp students with reading comprehension and vocabulary use the weekly newsquiz to test your knowledge of storie s you     saw on cnn student news"
+    reference = "this page includes the show transcript use the transcript to help students with reading comprehension and     vocabulary at the bottom of the page , comment for a chance to be mentioned on cnn student news . you must be a teac    her or a student age # # or older to request a mention on the cnn student news roll call . the weekly newsquiz tests     students ' knowledge of even ts in the news"
+    rouge_scorer = init_rouge_scorer()
+    print(get_rouge_score(rouge_scorer, hypothesis, reference))
+
     pass
