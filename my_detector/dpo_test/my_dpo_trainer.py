@@ -1,5 +1,6 @@
 import functools
 import json
+import random
 import time
 from typing import Dict
 
@@ -48,7 +49,7 @@ bnb_config = BitsAndBytesConfig(
 )
 
 
-def load_trainer_args():
+def load_trainer_args(output_dir='./tmp'):
     # CUDA_VISIBLE_DEVICES=5,6 accelerate launch --multi_gpu DPO_trl.py \
     # CUDA_VISIBLE_DEVICES=5 python DPO_trl.py \
     # --per_device_train_batch_size 1 \
@@ -62,7 +63,7 @@ def load_trainer_args():
     # --remove_unused_columns false \
     # --logging_steps 10 \
     # --output_dir ./weights/DPO_BC
-    train_args = TrainingArguments(output_dir='./tmp.pt')
+    train_args = TrainingArguments(output_dir=output_dir)
     train_args.gradient_accumulation_steps = 1
     train_args.num_train_epochs = 2
     train_args.save_steps = 200
@@ -262,9 +263,67 @@ def predict_jsonl(model, tokenizer, jsonl_file, bar=0.5):
             json_objs.append(json_obj)
     texts = [json_obj['ai_rewrite'] for json_obj in json_objs]
     predict_results = get_text_predictions(model, tokenizer, texts, bar)
-    print(len(texts))
-    print(len(predict_results))
-    print(len([x for x in predict_results if x]))
+    prompt_map = {}
+    for i in range(0, len(json_objs)):
+        json_obj = json_objs[i]
+        prompt = json_obj['prompt']
+        if prompt_map.get(prompt) is None:
+            prompt_map[prompt] = {
+                'chosen': [],
+                'rejected': []
+            }
+        if predict_results[i]:
+            prompt_map[prompt]['chosen'].append(json_obj['ai_rewrite'])
+        else:
+            prompt_map[prompt]['rejected'].append(json_obj['ai_rewrite'])
+
+    results = []
+    for prompt in prompt_map:
+        prompt_obj = prompt_map[prompt]
+        chosens = prompt_obj['chosen']
+        rejecteds = prompt_obj['rejected']
+        if len(chosens) > 0 and len(rejecteds) > 0:
+            if len(chosens) == len(rejecteds):
+                for i in range(0, len(chosens)):
+                    results.append({
+                        'prompt': prompt,
+                        'chosen': chosens[i],
+                        'rejected': rejecteds[i]
+                    })
+            elif len(chosens) > len(rejecteds):
+                for i in range(0, len(rejecteds)):
+                    results.append({
+                        'prompt': prompt,
+                        'chosen': chosens[i],
+                        'rejected': rejecteds[i]
+                    })
+                for i in range(len(rejecteds), len(chosens)):
+                    results.append({
+                        'prompt': prompt,
+                        'chosen': chosens[i],
+                        'rejected': random.sample(rejecteds, 1)[0]
+                    })
+            else:
+                for i in range(0, len(chosens)):
+                    results.append({
+                        'prompt': prompt,
+                        'chosen': chosens[i],
+                        'rejected': rejecteds[i]
+                    })
+                for i in range(len(chosens), len(rejecteds)):
+                    results.append({
+                        'prompt': prompt,
+                        'chosen': random.sample(chosens, 1)[0],
+                        'rejected': rejecteds[i]
+                    })
+        else:
+            continue
+    # print(len(texts))
+    # print(len(predict_results))
+    # print(len([x for x in predict_results if x]))
+    print(len(results))
+    with open(jsonl_file + '.all', 'w', encoding='utf-8') as out_f:
+        out_f.write(json.dumps(results))
 
 def prepare_train_data():
     json_objs = []
@@ -286,48 +345,61 @@ def prepare_train_data():
 
 if __name__ == '__main__':
 
-    predict_model, predict_tokenizer = load_predict_model(model_path='../roberta_test/hc3_row.pt')
+    ### generate data part
+    # predict_model, predict_tokenizer = load_predict_model(model_path='../roberta_test/hc3_row.pt')
     # print(get_text_predictions(
     #     model=predict_model
     #     , tokenizer=predict_tokenizer,
     #     texts=['A proposed financial plan to support Mental Health Services for Healthcare Providers of Critical ($)Staff Mental Health Service Manager 400,000 Personal 840,000 Group 650,000 Technical Support Staff 180,000 Equipment Personal Laptops 12,000 Personal Mobile Phones 5,000 Services Telephone Service 2,400 Internet Service 300 Supplies Supplies 500 Medication 1,500 Training Employee Training 2,000 Managerial Training 2,000 Offices 3,000 Laptops and Mobile Phones 1,500 Other Unforeseen 5,000 The impact of a biblical on the proposed financial planThe biblical on presumes that leaders are granted control over other people and resources by God (Carradus, Zozimo, & Discua Cruz, 2020). Thus, they should strive to ensure the well-being of every person in order to honor the Lord. In this regard, the current financial plan was designed in a manner that would benefit all the involved, including healthcare providers of critical patients and consulting staff.The potential holes and unknowns in the project’s financial the financial plan seemingly addresses most of the expenses that may occur during the project there are still some unknowns that should be As such, O’Connell (2020) argues that managers should always think about the worst-case scenario and be prepared to respond In the case of the current project, first of all, it is hard to predict the real demand for mental health services among doctors. This, in turn, negatively affects the ability to predict the required number of mental health workers. Secondly, potential crises and resulting inflation rates may cause a price increase, which, in turn, would additional money to purchase equipment and Moreover, the costs for the services, training, and may also that can fill the potential holes in the project’s financial planAs for the former hole in the financial plan, it can be assumed that there will be an average demand for mental services among healthcare This assumption would help to partly mitigate the risks of the unknown need for offered services. It is explained by the fact that when the expected demand is low but the actual necessity is high, then the patients are largely On the contrary, when are high, but the actual demand is low, it leads to financial losses. As for inflation, it is necessary to assume a certain amount of money for unforeseen Therefore, if the prices rise, the will still be able to pay for the planned expenses.'],
     # ))
-    predict_jsonl(model=predict_model, tokenizer=predict_tokenizer, jsonl_file='./data/finance.mix.human.jsonl')
+    # predict_jsonl(model=predict_model, tokenizer=predict_tokenizer, jsonl_file='./data/finance.mix.human.jsonl')
+    # predict_jsonl(model=predict_model, tokenizer=predict_tokenizer, jsonl_file='./data/open_qa.mix.human.jsonl')
+    # predict_jsonl(model=predict_model, tokenizer=predict_tokenizer, jsonl_file='./data/medicine.mix.human.jsonl')
 
-    # # prepare_train_data()
-    #
-    # train_args = load_trainer_args()
-    #
-    # train_dataset = datasets.load_dataset('json', data_files={'train': './data/wiki_csai.mix.train'})['train']
-    #
-    # model, ref_model, tokenizer = load_model()
-    # tokenizer.pad_token = tokenizer.eos_token
-    #
-    # # tarin_dataset = Dataset.from_generator(
-    # #     lambda: load_dataset(
-    # #         '../../data_collector/test_data/hc3_english_mix_multi/wiki_csai.mix.jsonl',
-    # #         tokenizer,
-    # #         prompt_key='question',
-    # #         accept_key='human',
-    # #         reject_key='ai'
-    # #     )
-    # # )
-    #
-    # # note: use gradient checkpointing to save memory at the expense of slower backward pass.
-    # # model.gradient_checkpointing_enable()
-    # # model.enable_input_require_grads()
-    #
-    # # ref_model = ref_model.eval().requires_grad_(False)
-    # print(train_args)
-    # trainer = DPOTrainer(model, ref_model, args=train_args, train_dataset=train_dataset,
-    #                      # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
-    #                      tokenizer=tokenizer,
-    #                      max_length=512,
-    #                      max_prompt_length=512,
-    #                      peft_config=peft_config
-    #                      )
-    #
-    # trainer.train()
-    # trainer.save_model(train_args.output_dir)
+    ### train part
+    # prepare_train_data()
+
+    with open('./data/finance.mix.human.jsonl.all', 'r', encoding='utf-8') as f_1:
+        jsons1 = json.load(f_1)
+    with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_2:
+        jsons2 = json.load(f_2)
+    with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_3:
+        jsons3 = json.load(f_3)
+    with open('./data/hc3_all_1.mix.human.jsonl.all', 'w', encoding='utf-8') as f_4:
+        f_4.write(json.dumps(jsons1 + jsons2 + jsons3))
+
+    train_args = load_trainer_args(output_dir='hc3_all_1')
+
+    train_dataset = datasets.load_dataset('json', data_files={'train': './data/hc3_all_1.mix.human.jsonl.all'})['train']
+
+    model, ref_model, tokenizer = load_model()
+    tokenizer.pad_token = tokenizer.eos_token
+
+    # tarin_dataset = Dataset.from_generator(
+    #     lambda: load_dataset(
+    #         '../../data_collector/test_data/hc3_english_mix_multi/wiki_csai.mix.jsonl',
+    #         tokenizer,
+    #         prompt_key='question',
+    #         accept_key='human',
+    #         reject_key='ai'
+    #     )
+    # )
+
+    # note: use gradient checkpointing to save memory at the expense of slower backward pass.
+    # model.gradient_checkpointing_enable()
+    # model.enable_input_require_grads()
+
+    # ref_model = ref_model.eval().requires_grad_(False)
+    print(train_args)
+    trainer = DPOTrainer(model, ref_model, args=train_args, train_dataset=train_dataset,
+                         # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
+                         tokenizer=tokenizer,
+                         max_length=512,
+                         max_prompt_length=512,
+                         peft_config=peft_config
+                         )
+
+    trainer.train()
+    trainer.save_model(train_args.output_dir)
 
     pass
