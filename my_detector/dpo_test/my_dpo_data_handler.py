@@ -2,6 +2,7 @@ import nltk
 import numpy as np
 # nltk.download('stopwords')
 # nltk.download('punkt')
+# pip install git+https://github.com/lucadiliello/bleurt-pytorch.git
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.corpus import stopwords
@@ -64,6 +65,32 @@ def calculate_edit_distance(text1, text2):
     return dp[m][n]
 
 
+# bleu score part
+import torch
+from bleurt_pytorch import BleurtConfig, BleurtForSequenceClassification, BleurtTokenizer
+
+def init_bleu_model_and_tokenizer():
+
+    config = BleurtConfig.from_pretrained('lucadiliello/BLEURT-20')
+    model = BleurtForSequenceClassification.from_pretrained('lucadiliello/BLEURT-20')
+    tokenizer = BleurtTokenizer.from_pretrained('lucadiliello/BLEURT-20')
+
+
+
+    model.eval()
+
+    return  model, tokenizer
+
+def get_bleu_score(model, tokenizer, text1, text2):
+    references = [text1]
+    candidates = [text2]
+
+    with torch.no_grad():
+        inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt')
+        res = model(**inputs).logits.flatten().tolist()
+        return res[0]
+
+
 if __name__ == '__main__':
 
     text1 = "This is the first text"
@@ -77,4 +104,7 @@ if __name__ == '__main__':
 
     edit_distance = calculate_edit_distance(text1, text2)
     print("Minimum Edit Distance between the two texts:", edit_distance)
+
+    model,tokenizer = init_bleu_model_and_tokenizer()
+    print(get_bleu_score(model, tokenizer, text1, text2))
     pass
