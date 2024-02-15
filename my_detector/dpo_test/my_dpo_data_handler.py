@@ -95,19 +95,6 @@ def get_bleu_score(model, tokenizer, text1, text2):
         res = model(**inputs).logits.flatten().tolist()
         return res[0]
 
-
-def get_all_score(bleu_model, bleu_tokenizer, text1, text2):
-    cosine_score = calculate_cosine_similarity(text1, text2)
-    euclidean_score = calculate_euclidean_distance(text1, text2)
-    edit_distance = calculate_edit_distance(text1, text2)
-    bleu_score = get_bleu_score(bleu_model, bleu_tokenizer, text1, text2)
-    return {
-        'cosine': cosine_score,
-        'euclidean': euclidean_score,
-        'edit_distance': edit_distance,
-        'bleu': bleu_score,
-    }
-
 # rouge
 from rouge import Rouge
 
@@ -138,7 +125,21 @@ def get_rouge_score(rouge_scorer, text1, text2):
     #         }
     #     }
     # ]
-    return rouge_scorer.get_scores(hypothesis, reference)[0]['rouge-1']
+    return rouge_scorer.get_scores(hypothesis, reference)[0]['rouge-1']['f']
+
+def get_all_score(bleu_model, bleu_tokenizer, rouge_scorer, text1, text2):
+    cosine_score = calculate_cosine_similarity(text1, text2)
+    euclidean_score = calculate_euclidean_distance(text1, text2)
+    edit_distance = calculate_edit_distance(text1, text2)
+    bleu_score = get_bleu_score(bleu_model, bleu_tokenizer, text1, text2)
+    rouge_score = get_rouge_score(rouge_scorer, text1, text2)
+    return {
+        'cosine': cosine_score,
+        'euclidean': euclidean_score,
+        'edit_distance': edit_distance,
+        'bleu': bleu_score,
+        'rouge': rouge_score
+    }
 
 
 
@@ -157,11 +158,12 @@ if __name__ == '__main__':
     print("Minimum Edit Distance between the two texts:", edit_dist)
 
     model,tokenizer = init_bleu_model_and_tokenizer()
-    print(get_all_score(model, tokenizer, text1, text2))
 
     hypothesis = "the #### transcript is a written version of each day 's cnn student news program use this transcript to he    lp students with reading comprehension and vocabulary use the weekly newsquiz to test your knowledge of storie s you     saw on cnn student news"
     reference = "this page includes the show transcript use the transcript to help students with reading comprehension and     vocabulary at the bottom of the page , comment for a chance to be mentioned on cnn student news . you must be a teac    her or a student age # # or older to request a mention on the cnn student news roll call . the weekly newsquiz tests     students ' knowledge of even ts in the news"
     rouge_scorer = init_rouge_scorer()
     print(get_rouge_score(rouge_scorer, hypothesis, reference))
+
+    print(get_all_score(model, tokenizer, rouge_scorer, text1, text2))
 
     pass
