@@ -65,7 +65,7 @@ def load_trainer_args(output_dir='./tmp'):
     # --output_dir ./weights/DPO_BC
     train_args = TrainingArguments(output_dir=output_dir)
     train_args.gradient_accumulation_steps = 1
-    train_args.num_train_epochs = 2
+    train_args.num_train_epochs = 5
     train_args.save_steps = 200
     train_args.save_total_limit = 2
     train_args.learning_rate = 5e-4
@@ -78,18 +78,18 @@ def load_trainer_args(output_dir='./tmp'):
     return train_args
 
 
-def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2"):
+def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", quantization_config=bnb_config):
     all_begin_time = time.time()
 
     begin_time = time.time()
     model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                 quantization_config=bnb_config,
+                                                 quantization_config=quantization_config,
                                                  trust_remote_code=True)
     print("load model success: " + str(time.time() - begin_time))
 
     begin_time = time.time()
     ref_model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                     quantization_config = bnb_config,
+                                                     quantization_config = quantization_config,
                                                      trust_remote_code=True)
     print("load ref_model success: " + str(time.time() - begin_time))
 
@@ -368,11 +368,11 @@ if __name__ == '__main__':
     with open('./data/hc3_all_1.mix.human.jsonl.all', 'w', encoding='utf-8') as f_4:
         f_4.write(json.dumps(jsons1 + jsons2 + jsons3))
 
-    train_args = load_trainer_args(output_dir='hc3_all_1')
+    train_args = load_trainer_args(output_dir='open_qa_1')
 
-    train_dataset = datasets.load_dataset('json', data_files={'train': './data/hc3_all_1.mix.human.jsonl.all'})['train']
+    train_dataset = datasets.load_dataset('json', data_files={'train': './data/open_qa.mix.human.jsonl.all'})['train']
 
-    model, ref_model, tokenizer = load_model()
+    model, ref_model, tokenizer = load_model('lmsys/vicuna-7b-v1.5')
     tokenizer.pad_token = tokenizer.eos_token
 
     # tarin_dataset = Dataset.from_generator(
