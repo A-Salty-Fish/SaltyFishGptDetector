@@ -352,9 +352,9 @@ def convert_dataset(file_path):
     with open(file_path, 'r', encoding='utf-8') as in_f:
         json_objs = json.load(in_f)
         for json_obj in json_objs:
-            if rejected_set.index(json_obj['rejected']) != -1:
+            if json_obj['rejected'] in rejected_set:
                 continue
-            if chosen_set.index(json_obj['chosen']) != -1:
+            if json_obj['chosen'] in chosen_set:
                 continue
             rejected_set.append(json_obj['rejected'])
             chosen_set.append(json_obj['chosen'])
