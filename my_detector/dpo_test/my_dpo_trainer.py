@@ -352,6 +352,7 @@ def convert_dataset(file_path):
         for json_obj in json_objs:
             new_jsons.append(
                 {
+                    'prompt': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]',
                     'chosen': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['chosen'] + '</s>',
                     'rejected': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['rejected'] + '</s>'
                 }
