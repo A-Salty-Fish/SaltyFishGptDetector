@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import random
 import time
 from typing import Dict
@@ -343,6 +344,22 @@ def prepare_train_data():
         out_f.write(json.dumps(out_json_objs))
 
 
+def convert_dataset(file_path):
+    new_file_path = file_path + '.conv'
+    new_jsons = []
+    with open(file_path, 'r', encoding='utf-8') as in_f:
+        json_objs = json.load(in_f)
+        for json_obj in json_objs:
+            new_jsons.append(
+                {
+                    'chosen': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['chosen'] + '</s>',
+                    'rejected': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['rejected'] + '</s>'
+                }
+            )
+    with open(new_file_path, 'w', encoding='utf-8') as out_f:
+        out_f.write(json.dumps(new_jsons))
+
+
 if __name__ == '__main__':
 
     ### generate data part
@@ -370,7 +387,9 @@ if __name__ == '__main__':
 
     train_args = load_trainer_args(output_dir='open_qa_1')
 
-    train_dataset = datasets.load_dataset('json', data_files={'train': './data/open_qa.mix.human.jsonl.all'})['train']
+    dataset_path = './data/open_qa.mix.human.jsonl.all'
+    convert_dataset(dataset_path)
+    train_dataset = datasets.load_dataset('json', data_files={'train': dataset_path + '.conv'})['train']
 
     model, ref_model, tokenizer = load_model('lmsys/vicuna-7b-v1.5')
     tokenizer.pad_token = tokenizer.eos_token
