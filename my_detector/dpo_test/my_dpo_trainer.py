@@ -298,12 +298,12 @@ def predict_jsonl(model, tokenizer, jsonl_file, bar=0.5):
                         'chosen': chosens[i],
                         'rejected': rejecteds[i]
                     })
-                for i in range(len(rejecteds), len(chosens)):
-                    results.append({
-                        'prompt': prompt,
-                        'chosen': chosens[i],
-                        'rejected': random.sample(rejecteds, 1)[0]
-                    })
+                # for i in range(len(rejecteds), len(chosens)):
+                #     results.append({
+                #         'prompt': prompt,
+                #         'chosen': chosens[i],
+                #         'rejected': random.sample(rejecteds, 1)[0]
+                #     })
             else:
                 for i in range(0, len(chosens)):
                     results.append({
@@ -311,12 +311,12 @@ def predict_jsonl(model, tokenizer, jsonl_file, bar=0.5):
                         'chosen': chosens[i],
                         'rejected': rejecteds[i]
                     })
-                for i in range(len(chosens), len(rejecteds)):
-                    results.append({
-                        'prompt': prompt,
-                        'chosen': random.sample(chosens, 1)[0],
-                        'rejected': rejecteds[i]
-                    })
+                # for i in range(len(chosens), len(rejecteds)):
+                #     results.append({
+                #         'prompt': prompt,
+                #         'chosen': random.sample(chosens, 1)[0],
+                #         'rejected': rejecteds[i]
+                #     })
         else:
             continue
     # print(len(texts))
@@ -347,9 +347,17 @@ def prepare_train_data():
 def convert_dataset(file_path):
     new_file_path = file_path + '.conv'
     new_jsons = []
+    rejected_set = []
+    chosen_set = []
     with open(file_path, 'r', encoding='utf-8') as in_f:
         json_objs = json.load(in_f)
         for json_obj in json_objs:
+            if rejected_set.index(json_obj['rejected']) != -1:
+                continue
+            if chosen_set.index(json_obj['chosen']) != -1:
+                continue
+            rejected_set.append(json_obj['rejected'])
+            chosen_set.append(json_obj['chosen'])
             new_jsons.append(
                 {
                     'prompt': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]</s>',
