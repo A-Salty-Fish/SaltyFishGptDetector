@@ -39,8 +39,17 @@ class MyClassifier(nn.Module):
         return x
 
 peft_config = LoraConfig(
-    target_modules=["q_proj", "k_proj"],
-    init_lora_weights=False
+    target_modules=[
+        "q_proj",
+        "v_proj",
+        "k_proj",
+        "out_proj",
+        "fc_in",
+        "fc_out",
+        "wte",
+    ],
+    bias="none",
+    task_type="CAUSAL_LM",
 )
 
 bnb_config = BitsAndBytesConfig(
@@ -65,16 +74,16 @@ def load_trainer_args(output_dir='./tmp'):
     # --logging_steps 10 \
     # --output_dir ./weights/DPO_BC
     train_args = TrainingArguments(output_dir=output_dir)
-    train_args.gradient_accumulation_steps = 1
+    # train_args.gradient_accumulation_steps = 1
     train_args.num_train_epochs = 5
     train_args.save_steps = 200
     train_args.save_total_limit = 2
-    train_args.learning_rate = 5e-4
+    # train_args.learning_rate = 5e-4
     train_args.seed = 42
     train_args.ddp_find_unused_parameters = False
     train_args.remove_unused_columns = False
-    train_args.logging_steps = 100
-    train_args.per_device_train_batch_size = 1
+    train_args.logging_steps = 500
+    train_args.per_device_train_batch_size = 2
     train_args.per_device_eval_batch_size = 1
     return train_args
 
@@ -84,14 +93,21 @@ def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", quantization_con
 
     begin_time = time.time()
     model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                 quantization_config=quantization_config,
+                                                 # quantization_config=quantization_config,
+                                                 low_cpu_mem_usage=True,
+                                                 torch_dtype=torch.float16,
+                                                 load_in_4bit=True,
+                                                 # is_trainable=True,
                                                  trust_remote_code=True)
     print("load model success: " + str(time.time() - begin_time))
 
     begin_time = time.time()
-    ref_model = AutoModelForCausalLM.from_pretrained(model_name,
-                                                     quantization_config = quantization_config,
-                                                     trust_remote_code=True)
+    # ref_model = AutoModelForCausalLM.from_pretrained(model_name,
+    #                                                  # quantization_config = quantization_config,
+    #                                                  low_cpu_mem_usage=True,
+    #                                                  torch_dtype=torch.float16,
+    #                                                  load_in_4bit=True,
+    #                                                  trust_remote_code=True)
     print("load ref_model success: " + str(time.time() - begin_time))
 
     begin_time = time.time()
@@ -99,7 +115,7 @@ def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", quantization_con
     print("load tokenizer success: " + str(time.time() - begin_time))
 
     print("load all success: " + str(time.time() - all_begin_time))
-    return model, ref_model, tokenizer
+    return model, None, tokenizer
 
 
 def tokenize_batch_element(prompt: str, chosen: str, rejected: str, truncation_mode: str, tokenizer, max_length: int,
@@ -360,7 +376,7 @@ def convert_dataset(file_path):
             chosen_set.append(json_obj['chosen'])
             new_jsons.append(
                 {
-                    'prompt': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]</s>',
+                    'prompt': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]',
                     'chosen': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['chosen'] + '</s>',
                     'rejected': '<s>[INST] ' + json_obj['prompt'] + ' [/INST]' + json_obj['rejected'] + '</s>'
                 }
@@ -400,7 +416,7 @@ if __name__ == '__main__':
     convert_dataset(dataset_path)
     train_dataset = datasets.load_dataset('json', data_files={'train': dataset_path + '.conv'})['train']
 
-    model, ref_model, tokenizer = load_model('lmsys/vicuna-7b-v1.5')
+    model, ref_model, tokenizer = load_model()
     tokenizer.pad_token = tokenizer.eos_token
 
     # tarin_dataset = Dataset.from_generator(
@@ -419,7 +435,7 @@ if __name__ == '__main__':
 
     # ref_model = ref_model.eval().requires_grad_(False)
     print(train_args)
-    trainer = DPOTrainer(model, ref_model, args=train_args, train_dataset=train_dataset,
+    trainer = DPOTrainer(model, ref_model=None, args=train_args, train_dataset=train_dataset,
                          # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
                          tokenizer=tokenizer,
                          max_length=512,
@@ -429,5 +445,7 @@ if __name__ == '__main__':
 
     trainer.train()
     trainer.save_model(train_args.output_dir)
+    output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
+    trainer.model.save_pretrained(output_dir)
 
     pass
