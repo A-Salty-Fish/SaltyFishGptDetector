@@ -410,9 +410,9 @@ if __name__ == '__main__':
     with open('./data/hc3_all_1.mix.human.jsonl.all', 'w', encoding='utf-8') as f_4:
         f_4.write(json.dumps(jsons1 + jsons2 + jsons3))
 
-    train_args = load_trainer_args(output_dir='open_qa_1')
+    train_args = load_trainer_args(output_dir='hc3_all_1')
 
-    dataset_path = './data/open_qa.mix.human.jsonl.all'
+    dataset_path = './data/hc3_all_1.mix.human.jsonl.all'
     convert_dataset(dataset_path)
     train_dataset = datasets.load_dataset('json', data_files={'train': dataset_path + '.conv'})['train']
 

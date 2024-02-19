@@ -1,3 +1,5 @@
+import json
+
 import nltk
 import numpy as np
 # nltk.download('stopwords')
@@ -11,6 +13,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from tqdm import tqdm
 
 
 def preprocess_text(text):
@@ -91,7 +94,7 @@ def get_bleu_score(model, tokenizer, text1, text2):
     candidates = [text2]
 
     with torch.no_grad():
-        inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt')
+        inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt', max_length=512)
         res = model(**inputs).logits.flatten().tolist()
         return res[0]
 
@@ -125,7 +128,7 @@ def get_rouge_score(rouge_scorer, text1, text2):
     #         }
     #     }
     # ]
-    return rouge_scorer.get_scores(hypothesis, reference)[0]['rouge-1']['f']
+    return rouge_scorer.get_scores(text1, text2)[0]['rouge-1']['f']
 
 def get_all_score(bleu_model, bleu_tokenizer, rouge_scorer, text1, text2):
     cosine_score = calculate_cosine_similarity(text1, text2)
@@ -142,28 +145,75 @@ def get_all_score(bleu_model, bleu_tokenizer, rouge_scorer, text1, text2):
     }
 
 
+def output_list_metricts(scores):
+    print(f"mean: {np.mean(scores)}, max: {np.max(scores)}, min: {np.min(scores)}, var: {np.var(scores)}")
+
+def test_qwen_score():
+    model,tokenizer = init_bleu_model_and_tokenizer()
+    rouge_scorer = init_rouge_scorer()
+    row_texts = []
+    rewrite_texts = []
+    with open('./qwen/cheat_generation.test.qwen.jsonl', 'r', encoding='utf-8') as in_f:
+        for line in in_f:
+            json_obj = json.loads(line)
+            try:
+                row_texts.append(json_obj['ai'])
+                rewrite_texts.append(json_obj['ai_rewrite'])
+            except Exception as e:
+                print(json_obj)
+                print(e)
+    all_scores = []
+    for i in tqdm(range(0, len(row_texts))):
+        try:
+            all_score = get_all_score(model, tokenizer, rouge_scorer, row_texts[i], rewrite_texts[i])
+            all_scores.append(all_score)
+        except Exception as e:
+            print(e)
+            print(row_texts[i])
+            print(rewrite_texts[i])
+    cosines = [x['cosine'] for x in all_scores]
+    euclideans = [x['euclidean'] for x in all_scores]
+    edit_distances = [x['edit_distance'] for x in all_scores]
+    bleus = [x['bleu'] for x in all_scores]
+    rouges = [x['rouge'] for x in all_scores]
+
+    print("cosines")
+    output_list_metricts(cosines)
+    print("euclideans")
+    output_list_metricts(euclideans)
+    print("edit_distances")
+    output_list_metricts(edit_distances)
+    print("bleus")
+    output_list_metricts(bleus)
+    print("rouges")
+    output_list_metricts(rouges)
+
+
 
 if __name__ == '__main__':
 
-    text1 = "This is the first text"
-    text2 = "This is the second text"
+    # text1 = "This is the first text"
+    # text2 = "This is the second text"
+    #
+    # cosine_sim = calculate_cosine_similarity(text1, text2)
+    # print("Cosine Similarity between the two texts:", cosine_sim)
+    #
+    # euclidean_dist = calculate_euclidean_distance(text1, text2)
+    # print("Euclidean Distance between the two texts:", euclidean_dist)
+    #
+    # edit_dist = calculate_edit_distance(text1, text2)
+    # print("Minimum Edit Distance between the two texts:", edit_dist)
+    #
+    # model,tokenizer = init_bleu_model_and_tokenizer()
+    #
+    # hypothesis = "the #### transcript is a written version of each day 's cnn student news program use this transcript to he    lp students with reading comprehension and vocabulary use the weekly newsquiz to test your knowledge of storie s you     saw on cnn student news"
+    # reference = "this page includes the show transcript use the transcript to help students with reading comprehension and     vocabulary at the bottom of the page , comment for a chance to be mentioned on cnn student news . you must be a teac    her or a student age # # or older to request a mention on the cnn student news roll call . the weekly newsquiz tests     students ' knowledge of even ts in the news"
+    # rouge_scorer = init_rouge_scorer()
+    # print(get_rouge_score(rouge_scorer, hypothesis, reference))
+    #
+    # print(get_all_score(model, tokenizer, rouge_scorer, text1, text2))
 
-    cosine_sim = calculate_cosine_similarity(text1, text2)
-    print("Cosine Similarity between the two texts:", cosine_sim)
 
-    euclidean_dist = calculate_euclidean_distance(text1, text2)
-    print("Euclidean Distance between the two texts:", euclidean_dist)
-
-    edit_dist = calculate_edit_distance(text1, text2)
-    print("Minimum Edit Distance between the two texts:", edit_dist)
-
-    model,tokenizer = init_bleu_model_and_tokenizer()
-
-    hypothesis = "the #### transcript is a written version of each day 's cnn student news program use this transcript to he    lp students with reading comprehension and vocabulary use the weekly newsquiz to test your knowledge of storie s you     saw on cnn student news"
-    reference = "this page includes the show transcript use the transcript to help students with reading comprehension and     vocabulary at the bottom of the page , comment for a chance to be mentioned on cnn student news . you must be a teac    her or a student age # # or older to request a mention on the cnn student news roll call . the weekly newsquiz tests     students ' knowledge of even ts in the news"
-    rouge_scorer = init_rouge_scorer()
-    print(get_rouge_score(rouge_scorer, hypothesis, reference))
-
-    print(get_all_score(model, tokenizer, rouge_scorer, text1, text2))
+    test_qwen_score()
 
     pass
