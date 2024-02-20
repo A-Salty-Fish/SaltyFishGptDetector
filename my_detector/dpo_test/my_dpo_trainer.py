@@ -1,4 +1,5 @@
 import functools
+import gc
 import json
 import os
 import random
@@ -18,7 +19,6 @@ from trl import DPOTrainer
 from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
-
 
 peft_config = LoraConfig(
     target_modules=[
@@ -70,11 +70,12 @@ def load_trainer_args(output_dir='./tmp'):
     return train_args
 
 
-def load_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", quantization_config=bnb_config):
+def load_generator_train_model(model_name="mistralai/Mistral-7B-Instruct-v0.2",
+                               model_path='./hc3_all_1/final_checkpoint', quantization_config=bnb_config):
     all_begin_time = time.time()
 
     begin_time = time.time()
-    model = AutoModelForCausalLM.from_pretrained(model_name,
+    model = AutoModelForCausalLM.from_pretrained(model_path,
                                                  # quantization_config=quantization_config,
                                                  low_cpu_mem_usage=True,
                                                  torch_dtype=torch.float16,
@@ -164,7 +165,6 @@ def tokenize_batch_element(prompt: str, chosen: str, rejected: str, truncation_m
     return batch
 
 
-
 def load_dataset(data_path, tokenizer, prompt_key='prompt', accept_key='accept', reject_key='reject'):
     data = []
     with open(data_path, 'r', encoding='utf-8') as in_f:
@@ -197,7 +197,7 @@ def get_text_predictions(model, tokenizer, texts, bar=0.5):
     for text in texts:
         data_inputs.append(
             tokenizer(text, padding='max_length',
-                      max_length=256,
+                      max_length=512,
                       truncation=True,
                       return_tensors="pt")
         )
@@ -393,12 +393,15 @@ class MyGenerator:
         messages = [
             {"role": "user", "content": context}
         ]
-        encodeds = tokenizer.apply_chat_template(messages, return_tensors="pt")
+        encodeds = self.tokenizer.apply_chat_template(messages, return_tensors="pt")
         model_inputs = encodeds.to(self.device)
-        generated_ids = model.generate(model_inputs, max_new_tokens=512, do_sample=True,
-                                       pad_token_id=tokenizer.eos_token_id)
-        decoded = tokenizer.batch_decode(generated_ids)
+        generated_ids = self.model.generate(model_inputs, max_new_tokens=512, do_sample=True,
+                                            pad_token_id=self.tokenizer.eos_token_id)
+        decoded = self.tokenizer.batch_decode(generated_ids)
         return decoded[0].split('[/INST]')[1].replace('</s>', '')
+
+    def adversary_chat(self, row_train_text):
+        return self.chat(self.prompt_template + row_train_text)
 
     # 实时生成
     def generate_adversary_train_data(self, row_train_texts):
@@ -449,8 +452,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from tqdm import tqdm
+
+
 class GenerateTextScorer:
-    def __init__(self, need_cosine=True, need_euclidean=True, need_edit_distance=True, need_bleu=True, need_rouge=False):
+    def __init__(self, need_cosine=True, need_euclidean=True, need_edit_distance=True, need_bleu=True,
+                 need_rouge=False):
         if need_bleu:
             self.blue_config = BleurtConfig.from_pretrained('lucadiliello/BLEURT-20')
             self.blue_model = BleurtForSequenceClassification.from_pretrained('lucadiliello/BLEURT-20')
@@ -563,7 +569,8 @@ class GenerateTextScorer:
             result += min(100, euclidean_score)
         if self.need_edit_distance:
             total += 100
-            edit_distance_score = 100 - (row_score_result['edit_distance']) / (len(row_score_result['text1']) + len(row_score_result['text2']))
+            edit_distance_score = 100 - (row_score_result['edit_distance']) / (
+                    len(row_score_result['text1']) + len(row_score_result['text2']))
             result += min(100, edit_distance_score)
         if self.need_bleu:
             total += 100
@@ -572,7 +579,6 @@ class GenerateTextScorer:
             total += 100
             result += row_score_result['rouge'] * 100
         return 100 * result / total
-
 
 
 # 初始化 生成器的训练模型
@@ -660,8 +666,12 @@ class MyAdversaryDataset(Dataset):
 
 
 # 训练分类器的逻辑
-def train_classifier(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
-                     save_name="best_model.pt", adversary_generator: MyGenerator = None, adversary_file_path=None, adversary_data_rate=10):
+def train_classifier(base_model_name, test_model_path, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
+                     save_name="best_model.pt", adversary_generator: MyGenerator = None, adversary_file_path=None,
+                     adversary_data_rate=10):
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    model = (torch.load(test_model_path))
+    model.eval()
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -704,7 +714,7 @@ def train_classifier(model, tokenizer, train_dataloader, val_dataloader, learnin
             if adversary_file_path is not None:
                 adversary_train_data = adversary_generator.load_adversary_train_data(file_path=adversary_file_path)
             else:
-                row_train_data_samples = [x['content'] for x in train_dataloader][0: adversary_data_rate*batch_size]
+                row_train_data_samples = [x['content'] for x in train_dataloader][0: adversary_data_rate * batch_size]
                 adversary_train_data = adversary_generator.generate_adversary_train_data(row_train_data_samples)
             with open('./tmp/' + save_name + '.adversary.' + str(epoch), 'w', encoding='utf-8') as tmp_adversary_file:
                 tmp_adversary_file.write(json.dumps(adversary_train_data))
@@ -763,15 +773,112 @@ def train_classifier(model, tokenizer, train_dataloader, val_dataloader, learnin
 def train_generator(
         classifier_model_name, classifier_model_path,
         generator_model_name, generator_model_path,
-        try_generate_min_nums, try_generate_max_nums,
-        generate_text_scorer, min_score,
-
+        try_generate_min_nums, generate_max_retry_times,
+        min_available_score,
+        ai_texts: list[str], max_text_nums,
+        output_dir='./tmp/', tmp_data_str_num='1'
 ):
     # 首先加载对抗分类器
+    begin_time = time.time()
     classifier_model, classifier_tokenizer = load_predict_model(classifier_model_name, classifier_model_path)
+    print("load classifier: " + str(time.time() - begin_time))
+    # 然后加载对抗文本打分器
+    begin_time = time.time()
+    generate_text_scorer = GenerateTextScorer(need_euclidean=False, need_cosine=False, need_edit_distance=False,
+                                              need_rouge=False)
+    print("load generate text scorer: " + str(time.time() - begin_time))
+    # 最后加载对抗生成器
+    begin_time = time.time()
+    generator = MyGenerator(generator_model_name, generator_model_path)
+    print("load generator scorer: " + str(time.time() - begin_time))
 
+    # 将输入的ai文本先判别一遍，找出正确的判别文本进行重写
+    row_rewrite_texts = []
+    predict_texts_results = get_text_predictions(classifier_model, classifier_tokenizer, ai_texts)
+    for i in range(0, len(ai_texts)):
+        predict_texts_result = predict_texts_results[i]
+        if not predict_texts_result:
+            row_rewrite_texts.append(ai_texts[i])
 
+    rewrite_results = []
+    print("begin generate train datas")
+    begin_time = time.time()
+    for ai_text in tqdm(row_rewrite_texts):
+        cur_rewrite_texts = []
+        # 总生成样本数量足够就停止
+        if len(rewrite_results) > max_text_nums:
+            break
+        # 对于每一个文本 尝试多次重写 直到判别失败 或者超过最大重试次数
+        # 尝试找出两条成功重写文本
+        for _ in range(0, generate_max_retry_times):
+            cur_rewrite_text = generator.adversary_chat(ai_text)
+            # 判别失败
+            if get_text_predictions(classifier_model, classifier_tokenizer, [cur_rewrite_text])[0]:
+                cur_rewrite_texts.append(cur_rewrite_text)
+            if len(cur_rewrite_texts) >= try_generate_min_nums:
+                break
 
+        # 找出最合适的那条训练样本
+        cur_rewrite_result = None
+        # 检查目前单条样本生成的对抗样本数量
+        if len(cur_rewrite_texts) == 0:
+            continue
+        # 只有一条那没得选
+        elif len(cur_rewrite_texts) == 1:
+            cur_rewrite_result = cur_rewrite_texts[0]
+        # 大于一条需要排序一下，得分高的优先
+        else:
+            scores = [generate_text_scorer.weighted_score(generate_text_scorer.row_score(ai_text, x)) for x in
+                      cur_rewrite_texts]
+            max_score = np.max(scores)
+            # 不满足最低得分 则放弃
+            if max_score < min_available_score:
+                continue
+            for i in range(0, len(cur_rewrite_texts)):
+                if scores[i] == max_score:
+                    cur_rewrite_result = cur_rewrite_texts[i]
+                    break
+        cur_prompt = '<s>[INST] ' + generator.prompt_template + ai_text + ' [/INST]'
+        cur_chosen = cur_prompt + cur_rewrite_result + '</s>'
+        cur_rejected = cur_prompt + ai_text + '</s>'
+        rewrite_results.append(
+            {
+                'prompt': cur_prompt,
+                'chosen': cur_chosen,
+                'rejected': cur_rejected
+            }
+        )
+    print("end generate train datas: " + str(time.time() - begin_time))
+
+    # 临时保存结果
+    tmp_out_f_path = output_dir + '.adv.' + max_text_nums + '.' + tmp_data_str_num + '.train'
+    with open(tmp_out_f_path, 'w', encoding='utf-8') as tmp_out_f:
+        tmp_out_f.write(json.dumps(rewrite_results))
+
+    # 清理内存 准备正式进行训练
+    del classifier_model, classifier_tokenizer, generate_text_scorer, generator
+    gc.collect()  # 执行垃圾回收
+    torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
+
+    # 准备训练
+    print("begin dpo train")
+    train_args = load_trainer_args(output_dir)
+    train_generator_model, ref_generator_train_model, train_generator_tokenizer = load_generator_train_model()
+    train_dataset = datasets.load_dataset('json', data_files={'train': tmp_out_f_path})['train']
+
+    dpo_trainer = DPOTrainer(train_generator_model, ref_model=ref_generator_train_model, args=train_args,
+                             train_dataset=train_dataset,
+                             # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
+                             tokenizer=train_generator_tokenizer,
+                             max_length=512,
+                             max_prompt_length=512,
+                             peft_config=peft_config
+                             )
+
+    dpo_trainer.train()
+    dpo_trainer.save_model(train_args.output_dir)
+    dpo_output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
+    dpo_trainer.model.save_pretrained(dpo_output_dir)
 
 
 if __name__ == '__main__':
@@ -789,23 +896,23 @@ if __name__ == '__main__':
     ### train part
     # prepare_train_data()
 
-    with open('./data/finance.mix.human.jsonl.all', 'r', encoding='utf-8') as f_1:
-        jsons1 = json.load(f_1)
-    with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_2:
-        jsons2 = json.load(f_2)
-    with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_3:
-        jsons3 = json.load(f_3)
-    with open('./data/hc3_all_1.mix.human.jsonl.all', 'w', encoding='utf-8') as f_4:
-        f_4.write(json.dumps(jsons1 + jsons2 + jsons3))
-
-    train_args = load_trainer_args(output_dir='hc3_all_1')
-
-    dataset_path = './data/hc3_all_1.mix.human.jsonl.all'
-    convert_dataset(dataset_path)
-    train_dataset = datasets.load_dataset('json', data_files={'train': dataset_path + '.conv'})['train']
-
-    model, ref_model, tokenizer = load_model()
-    tokenizer.pad_token = tokenizer.eos_token
+    # with open('./data/finance.mix.human.jsonl.all', 'r', encoding='utf-8') as f_1:
+    #     jsons1 = json.load(f_1)
+    # with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_2:
+    #     jsons2 = json.load(f_2)
+    # with open('./data/medicine.mix.human.jsonl.all', 'r', encoding='utf-8') as f_3:
+    #     jsons3 = json.load(f_3)
+    # with open('./data/hc3_all_1.mix.human.jsonl.all', 'w', encoding='utf-8') as f_4:
+    #     f_4.write(json.dumps(jsons1 + jsons2 + jsons3))
+    #
+    # train_args = load_trainer_args(output_dir='hc3_all_1')
+    #
+    # dataset_path = './data/hc3_all_1.mix.human.jsonl.all'
+    # convert_dataset(dataset_path)
+    # train_dataset = datasets.load_dataset('json', data_files={'train': dataset_path + '.conv'})['train']
+    #
+    # model, ref_model, tokenizer = load_model()
+    # tokenizer.pad_token = tokenizer.eos_token
 
     # tarin_dataset = Dataset.from_generator(
     #     lambda: load_dataset(
@@ -822,18 +929,28 @@ if __name__ == '__main__':
     # model.enable_input_require_grads()
 
     # ref_model = ref_model.eval().requires_grad_(False)
-    print(train_args)
-    trainer = DPOTrainer(model, ref_model=None, args=train_args, train_dataset=train_dataset,
-                         # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
-                         tokenizer=tokenizer,
-                         max_length=512,
-                         max_prompt_length=512,
-                         peft_config=peft_config
-                         )
+    # print(train_args)
+    # trainer = DPOTrainer(model, ref_model=None, args=train_args, train_dataset=train_dataset,
+    #                      # data_collator=functools.partial(collate_fn, tokenizer=tokenizer),
+    #                      tokenizer=tokenizer,
+    #                      max_length=512,
+    #                      max_prompt_length=512,
+    #                      peft_config=peft_config
+    #                      )
+    #
+    # trainer.train()
+    # trainer.save_model(train_args.output_dir)
+    # output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
+    # trainer.model.save_pretrained(output_dir)
 
-    trainer.train()
-    trainer.save_model(train_args.output_dir)
-    output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
-    trainer.model.save_pretrained(output_dir)
+    with open('./qwen/cheat_generation.test.qwen.jsonl', 'r', encoding='utf-8') as test_f:
+        scorer = GenerateTextScorer(need_cosine=True, need_euclidean=False, need_edit_distance=False, need_bleu=True)
+        i = 0
+        for line in test_f:
+            i += 1
+            if i > 30:
+                break
+            json_obj = json.loads(line)
+            print(scorer.weighted_score(scorer.row_score(json_obj['ai'], json_obj['ai_rewrite'])))
 
     pass
