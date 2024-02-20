@@ -1,6 +1,8 @@
+import json
 import time
 
 import torch
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
@@ -51,8 +53,80 @@ def chat(model, tokenizer, context):
     return decoded[0].split('[/INST]')[1].replace('</s>', '')
     # return decoded[0]
 
+
+def generate_datas(model, tokenizer, output_dir, file_pre):
+    import os
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Directory '{output_dir}' created successfully.")
+    else:
+        print(f"Directory '{output_dir}' already exists.")
+
+    base_dir = '../../my_detector/roberta_test/data/'
+    files = [
+        'hc3_row.train',
+        'hc3_row.test',
+        'cheat_generation.test',
+        'cheat_polish.test',
+        'ghostbuster_claude.test',
+        'hc3_plus_qa_row.test',
+        # 'open_qa.academic.test',
+        # 'open_qa.continue.test',
+        # 'open_qa.difficult.test',
+        # 'open_qa.easy.test',
+        # 'open_qa.test',
+        # 'open_qa.rewrite.test',
+        'reddit_chatGPT.test',
+        'reddit_cohere.test',
+        'reddit_davinci.test',
+        'reddit_dolly.test',
+        'reddit_flant5.test',
+        'wikipedia_chatgpt.test',
+        'wikipedia_cohere.test',
+        'wikipedia_davinci.test',
+        'wikipedia_dolly.test',
+    ]
+    for file in files:
+        generate_paraphase_data(base_dir + file, file, model, tokenizer, output_dir, file_pre)
+
+
+def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir= './qwen/', file_pre='', max_num=1000):
+    prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}: "
+    print(file_path)
+    try:
+        with open(output_dir + file_name + file_pre + '.jsonl', 'r', encoding='utf-8') as out_f:
+            existed_lines = 0
+            for line in out_f:
+                existed_lines += 1
+            print(existed_lines)
+    except Exception as e:
+        existed_lines = 0
+    with open(file_path, 'r',encoding='utf-8') as in_f:
+        cur = 0
+        with open(output_dir + file_name + file_pre + '.jsonl', 'a', encoding='utf-8') as out_f:
+
+            file_objs = json.load(in_f)
+            ai_objs = [x for x in file_objs if x['label'] == 1][0: max_num]
+            results = []
+
+            for ai_obj in tqdm(ai_objs):
+                cur+=1
+                if cur < existed_lines:
+                    continue
+                ai_content = ai_obj['content']
+                ai_rewrite = chat(model, tokenizer, prompt_template + ai_obj['content'])
+                new_ai_obj = {
+                    'label': 1,
+                    'prompt': prompt_template + ai_obj['content'],
+                    'ai': ai_content,
+                    'ai_rewrite': ai_rewrite
+                }
+                out_f.write(json.dumps(new_ai_obj) + '\n')
+
+
 if __name__ == '__main__':
     model, tokenizer = load_test_model(perf_path='./open_qa_1/final_checkpoint')
     model.to(device)
     prompt = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}:  I cannot definitively answer whether your chest pain is related to the intake of Clindamycin and Oxycodone without conducting a thorough examination or reviewing your medical history. However, I can share some information that may help you better understand the potential risks associated with these medications.\n\nClindamycin is an antibiotic that is sometimes associated with gastrointestinal (GI) side effects, including abdominal pain, diarrhea, and nausea. In rare cases, Clindamycin can cause serious GI conditions such as Clostridium difficile-associated diarrhea (CDAD). While chest pain is not a common side effect, it is possible that your GI symptoms could be causing referred pain in your chest.\n\nOxycodone is an opioid pain medication that is sometimes associated with side effects such as respiratory depression, dizziness, and constipation. Rarely, opioids can cause heart-related side effects such as arrhythmias or chest pain.\n\nIt is important to note that chest pain can have many different causes, including heart conditions, lung conditions, and gastroesophageal reflux disease (GERD). Therefore, it is crucial that you contact your healthcare provider as soon as possible to report your symptoms. They may recommend further testing to evaluate the underlying cause of your chest pain.\n\nIn the meantime, you can take the following steps to help manage your symptoms:\n\n1. Continue taking your medications as prescribed, but do not increase the dosage without speaking to your healthcare provider.\n2. Avoid taking large or frequent doses of opioids, as this can increase the risk of side effects.\n3. Stay hydrated by drinking plenty of water or other clear fluids.\n4. Eat smaller, more frequent meals throughout the day instead of large meals.\n5. Avoid caffeine, alcohol, and other substances that can irritate your GI tract.\n6. Practice deep breathing exercises to help reduce anxiety and improve oxygenation to your body.\n\nI hope this information is helpful. I encourage you to contact your healthcare provider with any concerns or questions you may have."
-    print(chat(model, tokenizer, prompt))
+    # print(chat(model, tokenizer, prompt))
+    generate_datas(model, tokenizer, './mix_1/', '.mix.1000')
