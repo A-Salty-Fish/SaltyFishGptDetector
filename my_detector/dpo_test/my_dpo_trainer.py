@@ -6,37 +6,19 @@ import time
 from typing import Dict
 
 import datasets
+import numpy as np
 import torch
+from bleurt_pytorch import BleurtForSequenceClassification, BleurtTokenizer, BleurtConfig
 from peft import LoraConfig
 from torch import nn
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig, AutoModel
-from datasets import Dataset
+
 from trl import DPOTrainer
+from torch.optim import Adam
+from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 
-# 需要声明判别器模型结构
-class MyClassifier(nn.Module):
-    def __init__(self, base_model):
-        super(MyClassifier, self).__init__()
-
-        self.bert = base_model
-        self.fc1 = nn.Linear(768, 32)
-        self.fc2 = nn.Linear(32, 1)
-
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, input_ids, attention_mask):
-        bert_out = self.bert(input_ids=input_ids,
-                             attention_mask=attention_mask)[0][:, 0]
-        x = self.fc1(bert_out)
-        x = self.relu(x)
-
-        x = self.fc2(x)
-        x = self.sigmoid(x)
-
-        return x
 
 peft_config = LoraConfig(
     target_modules=[
@@ -182,34 +164,6 @@ def tokenize_batch_element(prompt: str, chosen: str, rejected: str, truncation_m
     return batch
 
 
-#
-# def collate_fn(batch, tokenizer):
-#     # first, pad everything to the same length
-#     tokenizer.pad_token_id = tokenizer.eod_id
-#     padded_batch = {}
-#     for k in batch[0].keys():
-#         if k.endswith('_input_ids') or k.endswith('_attention_mask') or k.endswith('_labels'):
-#             if 'prompt' in k:  # adapted from https://stackoverflow.com/questions/73256206
-#                 to_pad = [torch.LongTensor(ex[k][::-1]) for ex in batch]
-#             else:
-#                 to_pad = [torch.LongTensor(ex[k]) for ex in batch]
-#             if k.endswith('_input_ids'):
-#                 padding_value = tokenizer.pad_token_id
-#             elif k.endswith('_labels'):
-#                 padding_value = -100
-#             elif k.endswith('_attention_mask'):
-#                 padding_value = 0
-#             else:
-#                 raise ValueError(f"Unexpected key in batch '{k}'")
-#
-#             padded_batch[k] = pad_sequence(to_pad, batch_first=True, padding_value=padding_value)
-#             if 'prompt' in k:  # for the prompt, flip back so padding is on left side
-#                 padded_batch[k] = padded_batch[k].flip(dims=[1])
-#         else:
-#             padded_batch[k] = [ex[k] for ex in batch]
-#
-#     return padded_batch
-
 
 def load_dataset(data_path, tokenizer, prompt_key='prompt', accept_key='accept', reject_key='reject'):
     data = []
@@ -228,6 +182,7 @@ def load_dataset(data_path, tokenizer, prompt_key='prompt', accept_key='accept',
         # tokenize_data = collate_fn([tokenize_data], tokenizer)
         # print(tokenize_data)
         yield tokenize_data
+
 
 # 以下为获取对抗样本所需的能力
 def get_text_predictions(model, tokenizer, texts, bar=0.5):
@@ -271,6 +226,7 @@ def load_predict_model(model_name="roberta-base", model_path='best_model.pt'):
     model.eval()
 
     return model, tokenizer
+
 
 def predict_jsonl(model, tokenizer, jsonl_file, bar=0.5):
     json_objs = []
@@ -342,6 +298,7 @@ def predict_jsonl(model, tokenizer, jsonl_file, bar=0.5):
     with open(jsonl_file + '.all', 'w', encoding='utf-8') as out_f:
         out_f.write(json.dumps(results))
 
+
 def prepare_train_data():
     json_objs = []
     with open('../../data_collector/test_data/hc3_english_mix_multi/wiki_csai.mix.jsonl', 'r',
@@ -385,8 +342,439 @@ def convert_dataset(file_path):
         out_f.write(json.dumps(new_jsons))
 
 
-if __name__ == '__main__':
+# 以下为分类器和生成器模块
+# ——————————————————————————————————————————————————————
 
+# 需要声明判别器模型结构
+class MyClassifier(nn.Module):
+    def __init__(self, base_model):
+        super(MyClassifier, self).__init__()
+
+        self.bert = base_model
+        self.fc1 = nn.Linear(768, 32)
+        self.fc2 = nn.Linear(32, 1)
+
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, input_ids, attention_mask):
+        bert_out = self.bert(input_ids=input_ids,
+                             attention_mask=attention_mask)[0][:, 0]
+        x = self.fc1(bert_out)
+        x = self.relu(x)
+
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+
+        return x
+
+
+# 声明生成器
+class MyGenerator:
+    def __init__(self, model_name, perf_path, device='cuda'):
+        all_begin_time = time.time()
+
+        model = AutoModelForCausalLM.from_pretrained(perf_path,
+                                                     # quantization_config=bnb_config,
+                                                     trust_remote_code=True)
+        print("load model success: " + str(time.time() - all_begin_time))
+
+        begin_time = time.time()
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        print("load tokenizer success: " + str(time.time() - begin_time))
+
+        print("load all success: " + str(time.time() - all_begin_time))
+        self.model = model
+        self.tokenizer = tokenizer
+        self.device = device
+        self.prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}:  "
+
+    def chat(self, context):
+        messages = [
+            {"role": "user", "content": context}
+        ]
+        encodeds = tokenizer.apply_chat_template(messages, return_tensors="pt")
+        model_inputs = encodeds.to(self.device)
+        generated_ids = model.generate(model_inputs, max_new_tokens=512, do_sample=True,
+                                       pad_token_id=tokenizer.eos_token_id)
+        decoded = tokenizer.batch_decode(generated_ids)
+        return decoded[0].split('[/INST]')[1].replace('</s>', '')
+
+    # 实时生成
+    def generate_adversary_train_data(self, row_train_texts):
+        results = []
+        for row_train_text in row_train_texts:
+            adversary_text = self.chat(self.prompt_template + row_train_text)
+            results.append({
+                'label': 1,
+                'content': adversary_text,
+                'row': row_train_text
+            })
+        return results
+
+    # 从文件中加载
+    def load_adversary_train_data(self, file_path, file_type='jsonl'):
+        results = []
+        if file_type == 'jsonl':
+            with open(file_path, 'r', encoding='utf-8') as in_f:
+                for line in in_f:
+                    results.append(json.loads(line))
+            return [{
+                'label': 1,
+                'content': x['ai_rewrite']
+            } for x in results]
+        elif file_type == 'json_arr':
+            with open(file_path, 'r', encoding='utf-8') as in_f:
+                results = json.load(in_f)
+            return [{
+                'label': 1,
+                'content': x['ai_rewrite']
+            } for x in results]
+        else:
+            return []
+
+
+# 对生成器生成的文本进行相似度打分，避免过于不相似
+import json
+
+import nltk
+import numpy as np
+# nltk.download('stopwords')
+# nltk.download('punkt')
+# https://huggingface.co/lucadiliello/BLEURT-20
+# pip install git+https://github.com/lucadiliello/bleurt-pytorch.git
+# pip install rouge
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from tqdm import tqdm
+class GenerateTextScorer:
+    def __init__(self, need_cosine=True, need_euclidean=True, need_edit_distance=True, need_bleu=True, need_rouge=False):
+        if need_bleu:
+            self.blue_config = BleurtConfig.from_pretrained('lucadiliello/BLEURT-20')
+            self.blue_model = BleurtForSequenceClassification.from_pretrained('lucadiliello/BLEURT-20')
+            self.blue_tokenizer = BleurtTokenizer.from_pretrained('lucadiliello/BLEURT-20')
+            self.blue_model.eval()
+            print("load bleu model")
+        if need_rouge:
+            from rouge import Rouge
+            self.rouge = Rouge()
+            print("load rouge model")
+        self.need_cosine = need_cosine
+        self.need_euclidean = need_euclidean
+        self.need_edit_distance = need_edit_distance
+        self.need_bleu = need_bleu
+        self.need_rouge = need_rouge
+
+    def preprocess_text(self, text):
+        stop_words = set(stopwords.words('english'))
+        word_tokens = word_tokenize(text.lower())
+        filtered_text = [word for word in word_tokens if word.isalnum() and word not in stop_words]
+        return " ".join(filtered_text)
+
+    def calculate_cosine_similarity(self, text1, text2):
+        preprocessed_text1 = self.preprocess_text(text1)
+        preprocessed_text2 = self.preprocess_text(text2)
+
+        vectorizer = CountVectorizer().fit_transform([preprocessed_text1, preprocessed_text2])
+        vectors = vectorizer.toarray()
+
+        cosine_sim = cosine_similarity(vectors)
+
+        return cosine_sim[0][1]
+
+    def calculate_euclidean_distance(self, text1, text2):
+        preprocessed_text1 = self.preprocess_text(text1)
+        preprocessed_text2 = self.preprocess_text(text2)
+
+        tfidf_vectorizer = TfidfVectorizer()
+        tfidf_matrix = tfidf_vectorizer.fit_transform([preprocessed_text1, preprocessed_text2])
+
+        tfidf_array = tfidf_matrix.toarray()
+        euclidean_dist = np.linalg.norm(tfidf_array[0] - tfidf_array[1])
+
+        return euclidean_dist
+
+    def calculate_edit_distance(self, text1, text2):
+        m = len(text1)
+        n = len(text2)
+
+        # 初始化动态规划矩阵
+        dp = [[0 for j in range(n + 1)] for i in range(m + 1)]
+
+        # 初始化第一行和第一列
+        for i in range(1, m + 1):
+            dp[i][0] = i
+        for j in range(1, n + 1):
+            dp[0][j] = j
+
+        # 计算动态规划矩阵
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if text1[i - 1] == text2[j - 1]:
+                    dp[i][j] = dp[i - 1][j - 1]
+                else:
+                    dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+
+        return dp[m][n]
+
+    def get_bleu_score(self, text1, text2):
+        model = self.blue_model
+        tokenizer = self.blue_tokenizer
+        references = [text1]
+        candidates = [text2]
+        with torch.no_grad():
+            inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt', max_length=512)
+            res = model(**inputs).logits.flatten().tolist()
+            return res[0]
+
+    def get_rouge_score(self, text1, text2):
+        return self.rouge.get_scores(text1, text2)[0]['rouge-1']['f']
+
+    # 原始分数
+    def row_score(self, text1, text2):
+        # need_cosine = True, need_euclidean = True, need_edit_distance = True, need_bleu = True, need_rouge = False
+        result = {}
+        if self.need_cosine:
+            result['cosine'] = self.calculate_cosine_similarity(text1, text2)
+        if self.need_euclidean:
+            result['euclidean'] = self.calculate_euclidean_distance(text1, text2)
+        if self.need_edit_distance:
+            result['edit_distance'] = self.calculate_edit_distance(text1, text2)
+        if self.need_bleu:
+            result['bleu'] = self.get_bleu_score(text1, text2)
+        if self.need_rouge:
+            result['rouge'] = self.get_rouge_score(text1, text2)
+        result['text1'] = text1
+        result['text2'] = text2
+        return result
+
+    # 加权分数
+    def weighted_score(self, row_score_result):
+        result = 0
+        total = 0
+        if self.need_cosine:
+            total += 100
+            result += row_score_result['cosine'] * 100
+        if self.need_euclidean:
+            total += 100
+            euclidean_score = 100 - 100 * row_score_result['euclidean'] / 1.5
+            result += min(100, euclidean_score)
+        if self.need_edit_distance:
+            total += 100
+            edit_distance_score = 100 - (row_score_result['edit_distance']) / (len(row_score_result['text1']) + len(row_score_result['text2']))
+            result += min(100, edit_distance_score)
+        if self.need_bleu:
+            total += 100
+            result += row_score_result['bleu'] * 100
+        if self.need_rouge:
+            total += 100
+            result += row_score_result['rouge'] * 100
+        return 100 * result / total
+
+
+
+# 初始化 生成器的训练模型
+def init_generator_train_model_and_tokenizer(model_name="mistralai/Mistral-7B-Instruct-v0.2"):
+    all_begin_time = time.time()
+    begin_time = time.time()
+    model = AutoModelForCausalLM.from_pretrained(model_name,
+                                                 # quantization_config=quantization_config,
+                                                 low_cpu_mem_usage=True,
+                                                 torch_dtype=torch.float16,
+                                                 load_in_4bit=True,
+                                                 trust_remote_code=True)
+    print("load generator train model success: " + str(time.time() - begin_time))
+
+    begin_time = time.time()
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    print("load generator train tokenizer success: " + str(time.time() - begin_time))
+
+    print("load generator train all success: " + str(time.time() - all_begin_time))
+    return model, None, tokenizer
+
+
+# 初始化 分类器的训练模型
+def init_classifier_train_model_and_tokenizer(base_model_name='roberta-base'):
+    begin_time = time.time()
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    # BERT_MODEL = "roberta-base"
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+    base_model = AutoModel.from_pretrained(base_model_name)
+    model = MyClassifier(base_model)
+
+    print("load classifier train all success: " + str(time.time() - begin_time))
+    return model, tokenizer
+
+
+# 训练集
+class MyTrainDataset(Dataset):
+    def __init__(self, dataframe, tokenizer, max_nums=None):
+        texts = [x['content'] for i, x in dataframe.iterrows()][0: max_nums]
+
+        self.labels = [x['label'] for i, x in dataframe.iterrows()][0: max_nums]
+
+        self.texts = [tokenizer(text, padding='max_length',
+                                max_length=256,
+                                truncation=True,
+                                return_tensors="pt")
+                      for text in texts]
+
+        print("end tokenize datas")
+
+    def __getitem__(self, idx):
+        text = self.texts[idx]
+        label = self.labels[idx]
+
+        return text, label
+
+    def __len__(self):
+        return min(len(self.texts), len(self.labels))
+
+
+# 对抗训练集
+class MyAdversaryDataset(Dataset):
+    def __init__(self, datas: list, tokenizer):
+        texts = [x['content'] for x in datas]
+        # print("begin tokenize datas")
+        self.texts = [tokenizer(text, padding='max_length',
+                                max_length=256,
+                                truncation=True,
+                                return_tensors="pt")
+                      for text in texts]
+
+        # print("end tokenize datas")
+        self.labels = [x['label'] for x in datas]
+
+    def __getitem__(self, idx):
+        text = self.texts[idx]
+        label = self.labels[idx]
+
+        return text, label
+
+    def __len__(self):
+        return min(len(self.texts), len(self.labels))
+
+
+# 训练分类器的逻辑
+def train_classifier(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
+                     save_name="best_model.pt", adversary_generator: MyGenerator = None, adversary_file_path=None, adversary_data_rate=10):
+    best_val_loss = float('inf')
+    early_stopping_threshold_count = 0
+
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    criterion = nn.BCELoss()
+    optimizer = Adam(model.parameters(), lr=learning_rate)
+
+    model = model.to(device)
+    criterion = criterion.to(device)
+
+    for epoch in range(epochs):
+        total_acc_train = 0
+        total_loss_train = 0
+
+        model.train()
+
+        for train_input, train_label in tqdm(train_dataloader):
+            attention_mask = train_input['attention_mask'].to(device)
+            input_ids = train_input['input_ids'].squeeze(1).to(device)
+
+            train_label = train_label.to(device)
+
+            output = model(input_ids, attention_mask)
+
+            loss = criterion(output, train_label.float().unsqueeze(1))
+
+            total_loss_train += loss.item()
+
+            acc = ((output >= 0.5).int() == train_label.unsqueeze(1)).sum().item()
+            total_acc_train += acc
+
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+        total_loss_adversary_train = 0
+        if adversary_generator is not None:
+            if adversary_file_path is not None:
+                adversary_train_data = adversary_generator.load_adversary_train_data(file_path=adversary_file_path)
+            else:
+                row_train_data_samples = [x['content'] for x in train_dataloader][0: adversary_data_rate*batch_size]
+                adversary_train_data = adversary_generator.generate_adversary_train_data(row_train_data_samples)
+            with open('./tmp/' + save_name + '.adversary.' + str(epoch), 'w', encoding='utf-8') as tmp_adversary_file:
+                tmp_adversary_file.write(json.dumps(adversary_train_data))
+            adversary_train_dataloader = DataLoader(MyAdversaryDataset(adversary_train_data, tokenizer),
+                                                    batch_size=batch_size)
+            print("training generate adversary train datas")
+
+            for adversary_train_input, adversary_train_label in tqdm(adversary_train_dataloader):
+                attention_mask = adversary_train_input['attention_mask'].to(device)
+                input_ids = adversary_train_input['input_ids'].squeeze(1).to(device)
+                adversary_train_label = adversary_train_label.to(device)
+                output = model(input_ids, attention_mask)
+                loss = criterion(output, adversary_train_label.float().unsqueeze(1))
+                total_loss_adversary_train += loss.item()
+                acc = ((output >= 0.5).int() == adversary_train_label.unsqueeze(1)).sum().item()
+                total_acc_train += acc
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
+
+        with torch.no_grad():
+            total_acc_val = 0
+            total_loss_val = 0
+
+            model.eval()
+
+            for val_input, val_label in tqdm(val_dataloader):
+                attention_mask = val_input['attention_mask'].to(device)
+                input_ids = val_input['input_ids'].squeeze(1).to(device)
+
+                val_label = val_label.to(device)
+
+                output = model(input_ids, attention_mask)
+
+                loss = criterion(output, val_label.float().unsqueeze(1))
+
+                total_loss_val += loss.item()
+
+                acc = ((output >= 0.5).int() == val_label.unsqueeze(1)).sum().item()
+                total_acc_val += acc
+
+            print(f'Epochs: {epoch + 1} '
+                  f'| Train Loss: {total_loss_train / len(train_dataloader): .3f} '
+                  f'| Train Accuracy: {total_acc_train / (len(train_dataloader.dataset)): .3f} '
+                  f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
+                  f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
+
+            if best_val_loss > total_loss_val + total_loss_adversary_train:
+                best_val_loss = total_loss_val + total_loss_adversary_train
+                torch.save(model, save_name)
+                print("Saved model")
+            else:
+                pass
+
+
+def train_generator(
+        classifier_model_name, classifier_model_path,
+        generator_model_name, generator_model_path,
+        try_generate_min_nums, try_generate_max_nums,
+        generate_text_scorer, min_score,
+
+):
+    # 首先加载对抗分类器
+    classifier_model, classifier_tokenizer = load_predict_model(classifier_model_name, classifier_model_path)
+
+
+
+
+
+if __name__ == '__main__':
     ### generate data part
     # predict_model, predict_tokenizer = load_predict_model(model_path='../roberta_test/hc3_row.pt')
     # print(get_text_predictions(
