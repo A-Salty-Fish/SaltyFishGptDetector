@@ -2,6 +2,7 @@ import json
 
 import nltk
 import numpy as np
+import transformers
 # nltk.download('stopwords')
 # nltk.download('punkt')
 
@@ -15,6 +16,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from tqdm import tqdm
 
+transformers.logging.set_verbosity_error()
 
 def preprocess_text(text):
     stop_words = set(stopwords.words('english'))
@@ -94,7 +96,7 @@ def get_bleu_score(model, tokenizer, text1, text2):
     candidates = [text2]
 
     with torch.no_grad():
-        inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt', max_length=512)
+        inputs = tokenizer(references, candidates, truncation=True, return_tensors='pt', max_length=512)
         res = model(**inputs).logits.flatten().tolist()
         return res[0]
 
@@ -204,7 +206,7 @@ if __name__ == '__main__':
     # edit_dist = calculate_edit_distance(text1, text2)
     # print("Minimum Edit Distance between the two texts:", edit_dist)
     #
-    # model,tokenizer = init_bleu_model_and_tokenizer()
+    model,tokenizer = init_bleu_model_and_tokenizer()
     #
     # hypothesis = "the #### transcript is a written version of each day 's cnn student news program use this transcript to he    lp students with reading comprehension and vocabulary use the weekly newsquiz to test your knowledge of storie s you     saw on cnn student news"
     # reference = "this page includes the show transcript use the transcript to help students with reading comprehension and     vocabulary at the bottom of the page , comment for a chance to be mentioned on cnn student news . you must be a teac    her or a student age # # or older to request a mention on the cnn student news roll call . the weekly newsquiz tests     students ' knowledge of even ts in the news"
@@ -213,7 +215,56 @@ if __name__ == '__main__':
     #
     # print(get_all_score(model, tokenizer, rouge_scorer, text1, text2))
 
+    text1 = '''Historical price-to-earnings (P/E) ratios for small-cap and large-cap stocks can vary significantly over time and may not be directly comparable due to the different characteristics of these two categories of stocks.Small-cap stocks, which are defined as stocks with a market capitalization of less than $2 billion, tend to be riskier and more volatile than large-cap stocks, which have a market capitalization of $10 billion or more. As a result, investors may be willing to pay a higher price for the potential growth opportunities offered by small-cap stocks, which can lead to higher P/E ratios.On the other hand, large-cap stocks tend to be more established and stable, with a longer track record of earnings and revenue growth. As a result, these stocks may trade at lower P/E ratios, as investors may be less willing to pay a premium for their growth potential.It is important to note that P/E ratios are just one factor to consider when evaluating a stock and should not be used in isolation. Other factors, such as the company's financial health, industry trends, and macroeconomic conditions, can also impact a stock's P/E ratio.'''
+    text2 = '''Historically, P/\E divergencebetween small-cap and large-cap stocks isnobsoletefact.P/\E ratios Small-cap(under $2 billion market cap) differ fundamentallyfromlarge-cap($10 billion or above) due to disparities ingrowth potential, risk, and steadiness.Riskier Small-Caps:
 
-    test_qwen_score()
+1. Volatility: Bigger price swings and unpredictability.
+2. Lack of history: Shorter revenue/earnings streams.
+
+Reasons why:
+a. Younger businesses, nascent industries, etc.
+b. Sensitive to market fluctuations.
+
+Premium Paid:
+Investors crave growth possibilities, willing to overpay = Higher P/\E ratios.
+
+Large-Caps (Established):
+
+1. Predictability: Less volatility and more stability.
+2. Longer History: Consistent Revenue/Earnings growth for decades.
+
+Reasons why:
+a. Well-established enterprises.
+b. Solid financials and industry dominance.
+
+Lower P/\E Ratios:
+Investors less eager to overpay for less potential = Lower P/\E ratios.
+
+Overall:
+
+1. P/\E ratios should complement, NOT dictate, decision-making.
+2. Company health, industry, and economy matter.
+
+Example: Two similar companies, X with a P/\E 20 vs Y with a P/\E 40:
+Instead of assuming X is undervalued and Y overvalued, analyze:
+
+X: Why the underperformance?
+Y: Why the outperformance?
+Bear in mind, P/\E comparisons only provide a partial insight!'''
+    print(get_bleu_score(model, tokenizer, text1, text1))
+    print(len(text2.split(' ')))
+    text1_char_set = []
+    for x in text1:
+        if x not in text1_char_set:
+            text1_char_set.append(x)
+    print([x for x in text2 if x not in text1_char_set])
+    text2 = text2.replace('\\', '')
+    text2 = text2.replace('\n', '')
+    print(get_bleu_score(model, tokenizer, text1, text2))
+    print(get_bleu_score(model, tokenizer, text2, " ".join(text2.split(' ')[0:400])))
+    print(get_bleu_score(model, tokenizer, text1, " ".join(text2.split(' ')[0:400])))
+
+
+    # test_qwen_score()
 
     pass

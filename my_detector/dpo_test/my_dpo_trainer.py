@@ -457,6 +457,8 @@ from tqdm import tqdm
 class GenerateTextScorer:
     def __init__(self, need_cosine=True, need_euclidean=True, need_edit_distance=True, need_bleu=True,
                  need_rouge=False):
+        import transformers
+        transformers.logging.set_verbosity_error()
         if need_bleu:
             self.blue_config = BleurtConfig.from_pretrained('lucadiliello/BLEURT-20')
             self.blue_model = BleurtForSequenceClassification.from_pretrained('lucadiliello/BLEURT-20')
@@ -531,7 +533,7 @@ class GenerateTextScorer:
         references = [text1]
         candidates = [text2]
         with torch.no_grad():
-            inputs = tokenizer(references, candidates, padding='longest', return_tensors='pt', max_length=512)
+            inputs = tokenizer(references, candidates, truncation=True, return_tensors='pt', max_length=512)
             res = model(**inputs).logits.flatten().tolist()
             return res[0]
 
@@ -624,7 +626,7 @@ class MyTrainDataset(Dataset):
         self.labels = [x['label'] for i, x in dataframe.iterrows()][0: max_nums]
 
         self.texts = [tokenizer(text, padding='max_length',
-                                max_length=256,
+                                max_length=512,
                                 truncation=True,
                                 return_tensors="pt")
                       for text in texts]
@@ -647,7 +649,7 @@ class MyAdversaryDataset(Dataset):
         texts = [x['content'] for x in datas]
         # print("begin tokenize datas")
         self.texts = [tokenizer(text, padding='max_length',
-                                max_length=256,
+                                max_length=512,
                                 truncation=True,
                                 return_tensors="pt")
                       for text in texts]
