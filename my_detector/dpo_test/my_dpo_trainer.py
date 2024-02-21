@@ -376,7 +376,7 @@ class MyGenerator:
 
         model = AutoModelForCausalLM.from_pretrained(perf_path,
                                                      # quantization_config=bnb_config,
-                                                     trust_remote_code=True)
+                                                     trust_remote_code=True, torch_dtype=torch.float16)
         print("load model success: " + str(time.time() - all_begin_time))
 
         begin_time = time.time()
@@ -384,7 +384,7 @@ class MyGenerator:
         print("load tokenizer success: " + str(time.time() - begin_time))
 
         print("load all success: " + str(time.time() - all_begin_time))
-        self.model = model
+        self.model = model.to(device)
         self.tokenizer = tokenizer
         self.device = device
         self.prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}:  "
@@ -666,7 +666,8 @@ class MyAdversaryDataset(Dataset):
 
 
 # 训练分类器的逻辑
-def train_classifier(base_model_name, test_model_path, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
+def train_classifier(base_model_name, test_model_path, train_dataloader, val_dataloader, learning_rate, epochs,
+                     batch_size=16,
                      save_name="best_model.pt", adversary_generator: MyGenerator = None, adversary_file_path=None,
                      adversary_data_rate=10):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
@@ -943,14 +944,17 @@ if __name__ == '__main__':
     # output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
     # trainer.model.save_pretrained(output_dir)
 
-    with open('./qwen/cheat_generation.test.qwen.jsonl', 'r', encoding='utf-8') as test_f:
-        scorer = GenerateTextScorer(need_cosine=True, need_euclidean=False, need_edit_distance=False, need_bleu=True)
-        i = 0
-        for line in test_f:
-            i += 1
-            if i > 30:
-                break
-            json_obj = json.loads(line)
-            print(scorer.weighted_score(scorer.row_score(json_obj['ai'], json_obj['ai_rewrite'])))
+    with open('../roberta_test/data/hc3_row.train', 'r', encoding='utf-8') as train_f:
+        ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
+    train_generator(
+        'roberta-base', './hc3_row.pt',
+        "mistralai/Mistral-7B-Instruct-v0.2", './hc3_all_1/final_checkpoint',
+        3, 10,
+        50,
+        ai_texts,
+        1000,
+        './dpo_1/'
+        '1'
+    )
 
     pass
