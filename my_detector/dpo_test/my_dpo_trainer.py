@@ -95,6 +95,7 @@ def load_generator_train_model(model_name="mistralai/Mistral-7B-Instruct-v0.2",
 
     begin_time = time.time()
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
     print("load tokenizer success: " + str(time.time() - begin_time))
 
     print("load all success: " + str(time.time() - all_begin_time))
@@ -854,7 +855,12 @@ def train_generator(
     print("end generate train datas: " + str(time.time() - begin_time))
 
     # 临时保存结果
-    tmp_out_f_path = output_dir + '.adv.' + max_text_nums + '.' + tmp_data_str_num + '.train'
+    tmp_out_f_path = output_dir + '.adv.' + str(max_text_nums) + '.' + tmp_data_str_num + '.train'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Directory '{output_dir}' created.")
+    else:
+        print(f"Directory '{output_dir}' already exists.")
     with open(tmp_out_f_path, 'w', encoding='utf-8') as tmp_out_f:
         tmp_out_f.write(json.dumps(rewrite_results))
 
