@@ -1,5 +1,6 @@
 import json
 import random
+import re
 from http import HTTPStatus
 import dashscope
 from tqdm import tqdm
@@ -109,6 +110,12 @@ def mix_rewrite_and_human_data(dir, nums=1000):
                 'content': human_json['content']
             })
         for ai_json in ai_jsons:
+            if ai_json['ai_rewrite'] is None:
+                continue
+            # try:
+            #     re.split(r'\s+|\n|\r|\t', ai_json['ai_rewrite'])
+            # except Exception as e:
+            #     print(ai_json)
             results.append({
                 'label': 1,
                 'content': ai_json['ai_rewrite']
