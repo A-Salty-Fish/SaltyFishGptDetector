@@ -148,16 +148,19 @@ def output_acc_with_key(key, acc_json):
     print(f'{key}\t{total_acc_r}\t{human_total}\t{human_acc}\t{human_acc_r}\t{ai_total}\t{ai_acc}\t{ai_acc_r}')
 
 
-def test_multi_prompt(model_path, test_file, max_nums=None):
+def test_multi_prompt(model_path, test_file, max_nums=None, default_prompt='default'):
     save_model = model_path
     test_file = test_file
     model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file, max_nums=max_nums)
     text_predictions = get_text_predictions(model, test_dataloader)
     acc_result = get_acc(text_predictions, test_labels, test_domains, test_prompts)
-    print(acc_result)
+    # print(acc_result)
     for key in acc_result['prompts']:
-        output_acc_with_key(key, acc_result['prompts'][key])
+        if key == 'default':
+            output_acc_with_key(default_prompt, acc_result['prompts'][key])
+        else:
+            output_acc_with_key(key, acc_result['prompts'][key])
 
 
 # def test_multi_prompt_map(model_path, test_file_map):
@@ -191,7 +194,18 @@ if __name__ == '__main__':
 
 
     save_model = 'hc3_mix_at.pt'
-    test_file = './data/ghostbuster_claude.test'
+    test_file = './data/m4_all.test'
+
+    test_files = [
+        './data/hc3_plus_qa_row.test',
+        './data/cheat_generation.test',
+        './data/cheat_polish.test',
+        './data/ghostbuster_claude.test',
+        './data/m4_all.test',
+    ]
+    for test_f in test_files:
+        print(test_f)
+        test_multi_prompt('hc3_row_adt.pt', test_f, 1000, test_f)
     # test_file = './data/hc3_plus_qa_row.test'
     # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)
@@ -201,10 +215,11 @@ if __name__ == '__main__':
     # for key in acc_result['prompts']:
     #     output_acc_with_key(key, acc_result['prompts'][key])
 
-    test_multi_prompt('hc3_row.pt', test_file, 1000)
-    test_multi_prompt('hc3_adt.pt', test_file, 1000)
-    test_multi_prompt('hc3_random_adt.pt', test_file, 1000)
-    test_multi_prompt('hc3_random_select_adt.pt', test_file, 1000)
+    # test_multi_prompt('hc3_row.pt', test_file, 1000)
+    # test_multi_prompt('hc3_adt.pt', test_file, 1000)
+    # test_multi_prompt('hc3_random_adt.pt', test_file, 1000)
+    # test_multi_prompt('hc3_random_select_adt.pt', test_file, 1000)
+    # test_multi_prompt('hc3_row_adt.pt', test_file, 1000)
 
 
     # for bar in [0.05, 0.1, 0.15, 0.2, 0.25, 0.3]:

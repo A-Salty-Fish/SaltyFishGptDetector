@@ -347,6 +347,16 @@ def begin_train_hc3_random_select_adt():
         'hc3_random_select_adt.pt'
     )
 
+def begin_train_hc3_row_adt():
+    train_file = './data/hc3_mix_multi_prompt.train'
+    train_df, val_df = load_train_and_val_df(train_file)
+    adversary_generator = None
+    begin_train(
+        train_file,
+        adversary_generator,
+        'hc3_row_adt.pt'
+    )
+
 
 if __name__ == '__main__':
     # batch_size = 16
@@ -367,4 +377,6 @@ if __name__ == '__main__':
     # begin_train_hc3_row()
     # begin_train_hc3_adt()
     # begin_train_hc3_random_adt()
-    begin_train_hc3_random_select_adt()
+    # begin_train_hc3_random_select_adt()
+    begin_train_hc3_row_adt()
+
