@@ -3,6 +3,8 @@ import numpy as np
 # https://github.com/ArGintum/GPTID
 # 论文：Intrinsic Dimension Estimation for Robust Detection of AI-Generated Texts
 
+# pip install scikit-dimension
+
 from scipy.spatial.distance import cdist
 from threading import Thread
 

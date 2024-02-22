@@ -9,10 +9,13 @@ import argparse
 import csv
 import datetime
 import json
+import os
 import random
 import re
 import time
 from functools import partial
+
+from tqdm import tqdm
 
 import data_convertor
 import detect_gpt
@@ -250,7 +253,7 @@ def test_classifier_and_dataset(classifier, data_set):
 
     all_data = data_set['human'] + data_set['ai']
     i = 0
-    for data in all_data:
+    for data in tqdm(all_data):
         i += 1
         content = data['content']
         label = data['label']
@@ -266,10 +269,10 @@ def test_classifier_and_dataset(classifier, data_set):
                     ai_true += 1
                 ai_total += 1
             percent = round(1.0 * (i) / len(all_data) * 100, 2)
-            print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
+            # print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
         except Exception as e:
             print(e)
-            print('error content:' + content)
+            # print('error content:' + content)
     print("test process end", end='\n')
 
     if human_total != 0:
@@ -557,6 +560,17 @@ def multi_prompt_test_my(method, in_file):
     return all_results
 
 
+def test_all_method_dir(base_dir='../my_detector/dpo_test/qwen/', max_nums=1000):
+    for method in support_methods:
+        tmp_result = test_hc3_mix_multi(method,
+                                        [
+                                            base_dir + file for file in os.listdir(base_dir) if file.endswith('.test')
+                                        ],
+                                        max_nums,
+                                        'json_arr'
+                                        )
+        output_test_result_table(tmp_result, 'dpo_1_' +  method)
+
 
 
 if __name__ == '__main__':
@@ -769,9 +783,9 @@ if __name__ == '__main__':
         'wikipedia_dolly.test',
     ]
     # # test file existed
-    for file in files:
-        with open(base_dir + file, 'r', encoding='utf-8') as test_f:
-            print(file)
+    # for file in files:
+    #     with open(base_dir + file, 'r', encoding='utf-8') as test_f:
+    #         print(file)
         # tmp_result = test_hc3_mix_multi('gltr',
         #                                 [
         #                                     base_dir + file for file in files
@@ -787,15 +801,17 @@ if __name__ == '__main__':
     #                                 'json_arr'
     #                                 )
 
-    for method in support_methods:
-        if method != 'intrinsic-dim':
-            continue
-        else:
-            tmp_result = test_hc3_mix_multi(method,
-                                            [
-                                                base_dir + file for file in files
-                                            ],
-                                            1000,
-                                            'json_arr'
-                                            )
-            output_test_result_table(tmp_result, 'adt_' +  method)
+    # for method in support_methods:
+    #     if method != 'intrinsic-dim':
+    #         continue
+    #     else:
+    #         tmp_result = test_hc3_mix_multi(method,
+    #                                         [
+    #                                             base_dir + file for file in files
+    #                                         ],
+    #                                         1000,
+    #                                         'json_arr'
+    #                                         )
+    #         output_test_result_table(tmp_result, 'adt_' +  method)
+
+    test_all_method_dir()
