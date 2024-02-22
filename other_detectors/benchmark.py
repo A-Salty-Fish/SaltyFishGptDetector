@@ -303,7 +303,7 @@ def test_classifier_and_dataset(classifier, data_set):
         "run_seconds": end_time - start_time
     }
 
-    print(test_result)
+    # print(test_result)
 
     return test_result
 
