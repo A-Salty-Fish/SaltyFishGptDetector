@@ -8,9 +8,11 @@ from typing import Dict
 
 import datasets
 import numpy as np
+import pandas as pd
 import torch
 from bleurt_pytorch import BleurtForSequenceClassification, BleurtTokenizer, BleurtConfig
 from peft import LoraConfig
+from sklearn.model_selection import train_test_split
 from torch import nn
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig, AutoModel
@@ -407,7 +409,7 @@ class MyGenerator:
     # 实时生成
     def generate_adversary_train_data(self, row_train_texts):
         results = []
-        for row_train_text in row_train_texts:
+        for row_train_text in tqdm(row_train_texts):
             adversary_text = self.chat(self.prompt_template + row_train_text)
             results.append({
                 'label': 1,
@@ -667,15 +669,29 @@ class MyAdversaryDataset(Dataset):
     def __len__(self):
         return min(len(self.texts), len(self.labels))
 
+def load_train_and_val_df(train_data_path="../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
+    train_file = pd.read_json(train_data_path)
+    train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
+    return train_df, val_df
+
+
+def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shuffle=False):
+    train_dataloader = DataLoader(MyTrainDataset(train_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
+    val_dataloader = DataLoader(MyTrainDataset(val_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
+
+    return train_dataloader, val_dataloader
 
 # 训练分类器的逻辑
-def train_classifier(base_model_name, test_model_path, train_dataloader, val_dataloader, learning_rate, epochs,
+def train_classifier(base_model_name, test_model_path, train_df, val_df, learning_rate, epochs,
                      batch_size=16,
                      save_name="best_model.pt", adversary_generator: MyGenerator = None, adversary_file_path=None,
                      adversary_data_rate=10):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-    model = (torch.load(test_model_path))
-    model.eval()
+    if test_model_path == 'roberta-base':
+        model = MyClassifier(AutoModel.from_pretrained(base_model_name))
+    else:
+        model = (torch.load(test_model_path))
+        model.eval()
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -687,6 +703,8 @@ def train_classifier(base_model_name, test_model_path, train_dataloader, val_dat
 
     model = model.to(device)
     criterion = criterion.to(device)
+
+    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size)
 
     for epoch in range(epochs):
         total_acc_train = 0
@@ -718,7 +736,9 @@ def train_classifier(base_model_name, test_model_path, train_dataloader, val_dat
             if adversary_file_path is not None:
                 adversary_train_data = adversary_generator.load_adversary_train_data(file_path=adversary_file_path)
             else:
-                row_train_data_samples = [x['content'] for x in train_dataloader][0: adversary_data_rate * batch_size]
+                row_train_data_samples = [x['content'] for i, x in train_df.iterrows()]
+                # random.shuffle(row_train_data_samples)
+                row_train_data_samples = row_train_data_samples[0: adversary_data_rate * batch_size]
                 adversary_train_data = adversary_generator.generate_adversary_train_data(row_train_data_samples)
             with open('./tmp/' + save_name + '.adversary.' + str(epoch), 'w', encoding='utf-8') as tmp_adversary_file:
                 tmp_adversary_file.write(json.dumps(adversary_train_data))
@@ -952,17 +972,29 @@ if __name__ == '__main__':
     # output_dir = os.path.join(train_args.output_dir, "final_checkpoint")
     # trainer.model.save_pretrained(output_dir)
 
-    with open('../roberta_test/data/hc3_row.train', 'r', encoding='utf-8') as train_f:
-        ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
-    train_generator(
-        'roberta-base', './hc3_row.pt',
-        "mistralai/Mistral-7B-Instruct-v0.2", './hc3_all_1/final_checkpoint',
-        3, 10,
-        50,
-        ai_texts,
-        1000,
-        './dpo_1/'
-        '1'
+    # with open('../roberta_test/data/hc3_row.train', 'r', encoding='utf-8') as train_f:
+    #     ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
+    # train_generator(
+    #     'roberta-base', './hc3_row.pt',
+    #     "mistralai/Mistral-7B-Instruct-v0.2", './hc3_all_1/final_checkpoint',
+    #     3, 10,
+    #     50,
+    #     ai_texts,
+    #     1000,
+    #     './dpo_1/'
+    #     '1'
+    # )
+
+    train_file = '../roberta_test/data/hc3_row.train'
+    train_df, val_df = load_train_and_val_df(train_file)
+    train_classifier(
+        'roberta-base', 'roberta-base',
+        train_df, val_df,
+        learning_rate=1e-5,
+        epochs=5,
+        batch_size=16,
+        save_name='dpo_1.pt',
+        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_1/1/final_checkpoint')
     )
 
     pass
