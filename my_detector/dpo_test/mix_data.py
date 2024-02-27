@@ -1,10 +1,53 @@
 import json
+import time
 
+import torch
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModel
-# tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True)
-# model = AutoModel.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True).half().cuda()
-# model = model.eval()
+from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM, BitsAndBytesConfig
+
+all_begin_time = time.time()
+
+# bnb_config = BitsAndBytesConfig(
+#     load_in_4bit=True,
+#     bnb_4bit_quant_type="nf4",
+#     bnb_4bit_compute_dtype=torch.bfloat16,
+# )
+
+# model = AutoModelForCausalLM.from_pretrained('./dpo_2/1/final_checkpoint',
+#                                              low_cpu_mem_usage=True,
+#                                              # quantization_config=bnb_config,
+#                                              trust_remote_code=True).to('cuda')
+# print("load model success: " + str(time.time() - all_begin_time))
+#
+# begin_time = time.time()
+# tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2", trust_remote_code=True)
+# print("load tokenizer success: " + str(time.time() - begin_time))
+#
+# print("load all success: " + str(time.time() - all_begin_time))
+
+def chat(model, tokenizer, context):
+    # start_time = time.time()
+    messages = [
+        {"role": "user", "content": context}
+        # {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
+        # {"role": "user", "content": "Do you have mayonnaise recipes?"}
+    ]
+
+    encodeds = tokenizer.apply_chat_template(messages, return_tensors="pt")
+
+    model_inputs = encodeds.to('cuda')
+
+    generated_ids = model.generate(model_inputs, max_new_tokens=512, do_sample=True,
+                                   pad_token_id=tokenizer.eos_token_id)
+    decoded = tokenizer.batch_decode(generated_ids)
+    # end_time = time.time()
+    # print("generate response successful: " + str(end_time - start_time))
+    # print(decoded[0])
+    # print('-----------------------')
+    # print(decoded)
+    return decoded[0].split('[/INST]')[1].replace('</s>', '')
+    # return decoded[0]
+
 
 
 def call_with_messages(message):
@@ -12,7 +55,7 @@ def call_with_messages(message):
     return response
 
 
-def generate_paraphase_data(file_path, file_name, output_dir= './glm/'):
+def generate_paraphase_data(file_path, file_name, output_dir= './dpo_1/', max_nums=1000):
     prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}: "
     print(file_path)
     try:
@@ -28,7 +71,8 @@ def generate_paraphase_data(file_path, file_name, output_dir= './glm/'):
         with open(output_dir + file_name + '.glm.jsonl', 'a', encoding='utf-8') as out_f:
 
             file_objs = json.load(in_f)
-            ai_objs = [x for x in file_objs if x['label'] == 1][0:1000]
+            ai_objs = [x for x in file_objs if x['label'] == 1]
+            ai_objs = ai_objs[0:max_nums]
             results = []
 
             for ai_obj in tqdm(ai_objs):
@@ -36,7 +80,7 @@ def generate_paraphase_data(file_path, file_name, output_dir= './glm/'):
                 if cur < existed_lines:
                     continue
                 ai_content = ai_obj['content']
-                ai_rewrite = call_with_messages(prompt_template + ai_obj['content'])
+                ai_rewrite = chat(model, tokenizer, prompt_template + ai_obj['content'])
                 new_ai_obj = {
                     'label': 1,
                     'prompt': prompt_template + ai_obj['content'],
@@ -45,11 +89,12 @@ def generate_paraphase_data(file_path, file_name, output_dir= './glm/'):
                 }
                 out_f.write(json.dumps(new_ai_obj) + '\n')
 
+
 def mix_rewrite_and_human_data(dir, nums=1000):
     base_dir = '../../my_detector/roberta_test/data/'
     files = [
         'cheat_generation.test',
-        'cheat_polish.test',
+        # 'cheat_polish.test',
         'ghostbuster_claude.test',
         'hc3_plus_qa_row.test',
         # 'open_qa.academic.test',
@@ -59,14 +104,15 @@ def mix_rewrite_and_human_data(dir, nums=1000):
         # 'open_qa.test',
         # 'open_qa.rewrite.test',
         'reddit_chatGPT.test',
-        'reddit_cohere.test',
-        'reddit_davinci.test',
-        'reddit_dolly.test',
-        'reddit_flant5.test',
+        # 'reddit_cohere.test',
+        # 'reddit_davinci.test',
+        # 'reddit_dolly.test',
+        # 'reddit_flant5.test',
         'wikipedia_chatgpt.test',
-        'wikipedia_cohere.test',
-        'wikipedia_davinci.test',
-        'wikipedia_dolly.test',
+        'hc3_row.test'
+        # 'wikipedia_cohere.test',
+        # 'wikipedia_davinci.test',
+        # 'wikipedia_dolly.test',
     ]
     for file in files:
         with open(base_dir + file, 'r', encoding='utf-8') as row_in_f:
@@ -102,7 +148,7 @@ if __name__ == '__main__':
     base_dir = '../../my_detector/roberta_test/data/'
     files = [
         'cheat_generation.test',
-        'cheat_polish.test',
+        # 'cheat_polish.test',
         'ghostbuster_claude.test',
         'hc3_plus_qa_row.test',
         # 'open_qa.academic.test',
@@ -112,13 +158,16 @@ if __name__ == '__main__':
         # 'open_qa.test',
         # 'open_qa.rewrite.test',
         'reddit_chatGPT.test',
-        'reddit_cohere.test',
-        'reddit_davinci.test',
-        'reddit_dolly.test',
-        'reddit_flant5.test',
+        # 'reddit_cohere.test',
+        # 'reddit_davinci.test',
+        # 'reddit_dolly.test',
+        # 'reddit_flant5.test',
         'wikipedia_chatgpt.test',
-        'wikipedia_cohere.test',
-        'wikipedia_davinci.test',
-        'wikipedia_dolly.test',
+        'hc3_row.test'
+        # 'wikipedia_cohere.test',
+        # 'wikipedia_davinci.test',
+        # 'wikipedia_dolly.test',
     ]
-    mix_rewrite_and_human_data('glm', nums=1000)
+    # for file in files:
+    #     generate_paraphase_data(base_dir + file, file, './dpo_2/', 1000)
+    mix_rewrite_and_human_data('dpo_1', 1000)
