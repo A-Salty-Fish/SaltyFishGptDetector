@@ -4,6 +4,7 @@ import time
 
 import pandas as pd
 import torch
+from torch import nn
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
@@ -15,9 +16,9 @@ bnb_config = BitsAndBytesConfig(
 
 device = "cuda"
 
+
 def load_test_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", perf_path='./tmp.pt/checkpoint-1600'):
     all_begin_time = time.time()
-
 
     model = AutoModelForCausalLM.from_pretrained(perf_path,
                                                  # quantization_config=bnb_config,
@@ -27,13 +28,13 @@ def load_test_model(model_name="mistralai/Mistral-7B-Instruct-v0.2", perf_path='
                                                  trust_remote_code=True)
     print("load model success: " + str(time.time() - all_begin_time))
 
-
     begin_time = time.time()
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     print("load tokenizer success: " + str(time.time() - begin_time))
 
     print("load all success: " + str(time.time() - all_begin_time))
     return model, tokenizer
+
 
 def chat(model, tokenizer, context):
     # start_time = time.time()
@@ -95,7 +96,7 @@ def generate_datas(model, tokenizer, output_dir, file_pre):
         generate_paraphase_data(base_dir + file, file, model, tokenizer, output_dir, file_pre)
 
 
-def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir= './qwen/', file_pre='', max_num=1000):
+def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir='./qwen/', file_pre='', max_num=1000):
     prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}: "
     print(file_path)
     try:
@@ -106,7 +107,7 @@ def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir= 
             print(existed_lines)
     except Exception as e:
         existed_lines = 0
-    with open(file_path, 'r',encoding='utf-8') as in_f:
+    with open(file_path, 'r', encoding='utf-8') as in_f:
         cur = 0
         with open(output_dir + file_name + file_pre + '.jsonl', 'a', encoding='utf-8') as out_f:
 
@@ -115,7 +116,7 @@ def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir= 
             results = []
 
             for ai_obj in tqdm(ai_objs):
-                cur+=1
+                cur += 1
                 if cur < existed_lines:
                     continue
                 ai_content = ai_obj['content']
@@ -128,13 +129,24 @@ def generate_paraphase_data(file_path, file_name, model, tokenizer, output_dir= 
                 }
                 out_f.write(json.dumps(new_ai_obj) + '\n')
 
+
 from torch.utils.data import Dataset, DataLoader
+
+
 class MyTestDataset(Dataset):
     def __init__(self, dataframe, tokenizer, max_nums=None):
-        texts = [x['content'] for i, x in dataframe.iterrows()][0: max_nums]
 
-        self.labels = [x['label'] for i, x in dataframe.iterrows()][0: max_nums]
+        if max_nums is None:
+            texts = [x['content'] for i, x in dataframe.iterrows()]
 
+            self.labels = [x['label'] for i, x in dataframe.iterrows()]
+
+
+        else:
+            ai_objs = [x['content'] for i, x in dataframe.iterrows() if x['label'] == 1][0: max_nums]
+            human_objs = [x['content'] for i, x in dataframe.iterrows() if x['label'] == 0][0: max_nums]
+            texts = ai_objs + human_objs
+            self.labels = [1 for _ in ai_objs] + [0 for _ in human_objs]
         self.texts = [tokenizer(text, padding='max_length',
                                 max_length=512,
                                 truncation=True,
@@ -151,6 +163,30 @@ class MyTestDataset(Dataset):
 
     def __len__(self):
         return min(len(self.texts), len(self.labels))
+
+
+class MyClassifier(nn.Module):
+    def __init__(self, base_model):
+        super(MyClassifier, self).__init__()
+
+        self.bert = base_model
+        self.fc1 = nn.Linear(768, 32)
+        self.fc2 = nn.Linear(32, 1)
+
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, input_ids, attention_mask):
+        bert_out = self.bert(input_ids=input_ids,
+                             attention_mask=attention_mask)[0][:, 0]
+        x = self.fc1(bert_out)
+        x = self.relu(x)
+
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+
+        return x
+
 
 def get_text_predictions(model, loader, bar=0.5):
     use_cuda = torch.cuda.is_available()
@@ -172,11 +208,15 @@ def get_text_predictions(model, loader, bar=0.5):
 
     return torch.cat(results_predictions).cpu().detach().numpy()
 
-def get__classifier_test_dataloader_and_labels(tokenizer, test_data_path="../Deberta_test/data/hc3_all.jsonl.test", batch_size=16, max_nums=None):
+
+def get__classifier_test_dataloader_and_labels(tokenizer, test_data_path="../Deberta_test/data/hc3_all.jsonl.test",
+                                               batch_size=16, max_nums=2000):
     test_df = pd.read_json(test_data_path)
     test_dataset = MyTestDataset(test_df, tokenizer, max_nums=max_nums)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
+    # print(test_dataset.labels)
     return test_dataloader, test_dataset.labels
+
 
 def get_acc(predictions, test_labels):
     human_total = 0
@@ -185,13 +225,13 @@ def get_acc(predictions, test_labels):
     ai_acc = 0
     for i in range(0, len(test_labels)):
         if test_labels[i] == 0:
-            human_total+=1
+            human_total += 1
             if predictions[i] == 0:
-                human_acc+=1
+                human_acc += 1
         elif test_labels[i] == 1:
-            ai_total+=1
+            ai_total += 1
             if predictions[i] == 1:
-                ai_acc+=1
+                ai_acc += 1
     return {
         'ai_acc': ai_acc,
         'ai_total': ai_total,
@@ -202,6 +242,7 @@ def get_acc(predictions, test_labels):
         'total_acc_r': (ai_acc + human_acc) / (ai_total + human_total)
     }
 
+
 def output_acc(file_name, acc_json):
     total_acc_r = acc_json['total_acc_r']
     human_total = acc_json['human_total']
@@ -210,25 +251,39 @@ def output_acc(file_name, acc_json):
     ai_total = acc_json['ai_total']
     ai_acc = acc_json['ai_acc']
     ai_acc_r = acc_json['ai_acc_r']
-    print(f'{file_name}\t{total_acc_r}\t{human_total}\t{human_acc}\t{human_acc_r}\t{ai_total}\t{ai_acc}\t{ai_acc_r}')
+    acc_str = f'{file_name}\t{total_acc_r}\t{human_total}\t{human_acc}\t{human_acc_r}\t{ai_total}\t{ai_acc}\t{ai_acc_r}'
+    return acc_str
 
 
 def test_classifier_multi_files(classifier_name, classifier_path, test_files, max_nums=1000):
     classifier_tokenizer = AutoTokenizer.from_pretrained(classifier_name)
     classifier_model = (torch.load(classifier_path))
     classifier_model.eval()
+    acc_str_result = ''
     for test_file in test_files:
         print(test_file)
-        test_dataloader, test_labels = get__classifier_test_dataloader_and_labels(classifier_tokenizer, test_file, max_nums=max_nums)
+        test_dataloader, test_labels = get__classifier_test_dataloader_and_labels(classifier_tokenizer, test_file,
+                                                                                  max_nums=max_nums)
         text_predictions = get_text_predictions(classifier_model, test_dataloader)
         acc_result = get_acc(text_predictions, test_labels)
-        output_acc(test_file.split('/')[-1], acc_result)
+        acc_str = output_acc(test_file.split('/')[-1], acc_result)
+        acc_str_result += acc_str + '\n'
+    return acc_str_result
+
 
 def test_classifier_base_dir(classifier_name, classifier_path, base_dir='./qwen/', max_nums=1000):
     test_files = [
         base_dir + file for file in os.listdir(base_dir) if file.endswith('.test')
     ]
-    test_classifier_multi_files(classifier_name, classifier_path, test_files, max_nums)
+    acc_str = test_classifier_multi_files(classifier_name, classifier_path, test_files, max_nums)
+    base_dir_str = base_dir.replace('.', '')
+    base_dir_str = base_dir_str.replace('/', '')
+    base_dir_str = base_dir_str.replace('//', '')
+    classifier_path_str = classifier_path.replace('.', '')
+    classifier_path_str = classifier_path_str.replace('/', '')
+    classifier_path_str = classifier_path_str.replace('//', '')
+    with open('./test_result/' + base_dir_str + '.' + classifier_path_str + '.csv', 'w', encoding='utf-8') as acc_f:
+        acc_f.write(acc_str + '\n')
 
 
 if __name__ == '__main__':
@@ -238,6 +293,17 @@ if __name__ == '__main__':
     # print(chat(model, tokenizer, prompt))
     # generate_datas(model, tokenizer, './mix_1/', '.mix.1000')
 
-    test_classifier_base_dir('roberta-base', './dpo_1.pt', './qwen/')
+    # test_classifier_base_dir('roberta-base', './dpo_3.pt', './qwen/', 1000)
+
+    test_dir = './dpo_1/'
+    for model_path in [
+        './dpo_3.pt',
+        './dpo_2.pt',
+        './dpo_1.pt',
+        './dpo_1_2.pt',
+        './hc3_adt.pt',
+        './hc3_row.pt'
+    ]:
+        test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
 
     pass

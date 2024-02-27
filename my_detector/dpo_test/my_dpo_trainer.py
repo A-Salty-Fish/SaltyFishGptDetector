@@ -975,26 +975,27 @@ if __name__ == '__main__':
     # with open('../roberta_test/data/hc3_row.train', 'r', encoding='utf-8') as train_f:
     #     ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
     # train_generator(
-    #     'roberta-base', './hc3_row.pt',
-    #     "mistralai/Mistral-7B-Instruct-v0.2", './hc3_all_1/final_checkpoint',
+    #     'roberta-base', './dpo_2.pt',
+    #     "mistralai/Mistral-7B-Instruct-v0.2", './dpo_2/1/final_checkpoint',
     #     3, 10,
     #     50,
     #     ai_texts,
     #     1000,
-    #     './dpo_1/'
+    #     './dpo_3/'
     #     '1'
     # )
 
     train_file = '../roberta_test/data/hc3_row.train'
     train_df, val_df = load_train_and_val_df(train_file)
     train_classifier(
-        'roberta-base', 'roberta-base',
+        'roberta-base', 'dpo_2.pt',
         train_df, val_df,
         learning_rate=1e-5,
         epochs=5,
         batch_size=16,
-        save_name='dpo_1.pt',
-        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_1/1/final_checkpoint')
+        save_name='dpo_3.pt',
+        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_3/1/final_checkpoint'),
+        adversary_data_rate=2
     )
 
     pass
