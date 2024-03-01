@@ -1,4 +1,5 @@
 import json
+import os
 
 import torch
 from datasets import load_dataset
@@ -52,7 +53,7 @@ class MyClassifier(nn.Module):
         return x
 
 
-def init_model_and_tokenizer():
+def init_model_and_tokenizer(ppo_config):
     # model = AutoModelForCausalLMWithValueHead.from_pretrained(
     #     config.model_name,
     #     # is_trainable=True,
@@ -77,7 +78,7 @@ def init_model_and_tokenizer():
     )
 
     model = AutoModelForCausalLMWithValueHead.from_pretrained(
-        config.model_name,
+        ppo_config.model_name,
         # is_trainable=True,
         low_cpu_mem_usage=True,
         quantization_config=bnb_config,
@@ -86,7 +87,7 @@ def init_model_and_tokenizer():
         device_map={"": 0},
         peft_config=peft_config
     )
-    tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+    tokenizer = AutoTokenizer.from_pretrained(ppo_config.model_name)
 
     tokenizer.pad_token = tokenizer.eos_token
 
@@ -228,7 +229,13 @@ def begin_train_ppo(
             ppo_trainer.log_stats(stats, batch, rewards)
 
     #### Save model
-    ppo_trainer.model.save_pretrained(save_model_path)
+    if not os.path.exists(save_model_path):
+        os.makedirs(save_model_path)
+    ppo_trainer.save_pretrained(save_model_path)
+    final_output_path = os.path.join(save_model_path, "final_checkpoint")
+    if not os.path.exists(final_output_path):
+        os.makedirs(final_output_path)
+    ppo_trainer.model.save_pretrained(final_output_path)
 
 
 if __name__ == '__main__':
@@ -245,10 +252,10 @@ if __name__ == '__main__':
         batch_size=1,
         ppo_epochs=5,
     )
-    model, tokenizer = init_model_and_tokenizer()
+    model, tokenizer = init_model_and_tokenizer(ppo_config)
 
     train_file = './data/1.adv.1000.1.train'
-    train_dataset = MyPromptDataset(train_file, tokenizer, 10)
+    train_dataset = MyPromptDataset(train_file, tokenizer)
     train_data_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers=0, collate_fn=lambda x: x)
 
     ppo_trainer = PPOTrainer(
@@ -268,7 +275,7 @@ if __name__ == '__main__':
         'max_new_tokens': 512,
     }
 
-    save_model_path = './ppo_1.pt'
+    save_model_path = './ppo_1'
 
     begin_train_ppo(
         ppo_trainer,
