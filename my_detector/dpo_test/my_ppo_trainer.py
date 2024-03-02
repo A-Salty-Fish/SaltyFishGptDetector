@@ -161,13 +161,16 @@ def tokenize_row_data(tokenizer, sample):
 
 class MyPromptDataset(Dataset):
     def __init__(self, train_file, tokenizer, max_nums=None):
+        self.prompt_template = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}:  "
+
         with open(train_file, 'r', encoding='utf-8') as in_f:
             datas = json.load(in_f)
+        ai_objs = [x for  x in datas if x['label'] == 1]
         if max_nums is None:
-            self.queries = [x['prompt'] for x in datas]
+            self.queries = [self.prompt_template + x['content'] for x in ai_objs]
             self.input_ids_list = [tokenizer.encode(query) for query in tqdm(self.queries)]
         else:
-            self.queries = [x['prompt'] for x in datas][0: max_nums]
+            self.queries = [self.prompt_template + x['content'] for x in ai_objs][0: max_nums]
             self.input_ids_list = [tokenizer.encode(query) for query in tqdm(self.queries)][0: max_nums]
 
     def __getitem__(self, idx):
@@ -210,11 +213,12 @@ def begin_train_ppo(
             #### Compute reward score
             texts = [q + r for q, r in zip(batch["query"], batch["response"])]
 
+            reward_texts = [x.split('[/INST]')[-1].replace('</s>', '') for x in texts]
             # print("texts")
             # print(texts)
             # pipe_outputs = reward_model(texts)
             # rewards = [torch.tensor(output[1]["score"]) for output in pipe_outputs]
-            rewards = [torch.tensor(x).to(device) for x in reward_func(texts)]
+            rewards = [torch.tensor(x).to(device) for x in reward_func(reward_texts)]
 
             response_tensors = response_tensors[0].to(device)
 
@@ -254,8 +258,8 @@ if __name__ == '__main__':
     )
     model, tokenizer = init_model_and_tokenizer(ppo_config)
 
-    train_file = './data/1.adv.1000.1.train'
-    train_dataset = MyPromptDataset(train_file, tokenizer)
+    train_file = '../roberta_test/data/hc3_row.train'
+    train_dataset = MyPromptDataset(train_file, tokenizer, 1000)
     train_data_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers=0, collate_fn=lambda x: x)
 
     ppo_trainer = PPOTrainer(
