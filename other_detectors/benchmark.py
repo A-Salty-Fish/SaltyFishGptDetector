@@ -560,8 +560,10 @@ def multi_prompt_test_my(method, in_file):
     return all_results
 
 
-def test_all_method_dir(base_dir='../my_detector/dpo_test/qwen/', max_nums=1000):
+def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', max_nums=1000):
     for method in support_methods:
+        if method == 'detect_gpt':
+            continue
         tmp_result = test_hc3_mix_multi(method,
                                         [
                                             base_dir + file for file in os.listdir(base_dir) if file.endswith('.test')

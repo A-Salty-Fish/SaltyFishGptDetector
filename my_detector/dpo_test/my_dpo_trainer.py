@@ -207,7 +207,7 @@ def get_text_predictions(model, tokenizer, texts, bar=0.5):
 
     with torch.no_grad():
         model.eval()
-        for data_input in tqdm(data_inputs):
+        for data_input in data_inputs:
             # print(data_input)
             attention_mask = data_input['attention_mask'].to(device)
             input_ids = data_input['input_ids'].squeeze(1).to(device)
@@ -720,7 +720,7 @@ def train_classifier(base_model_name, test_model_path, train_df, val_df, learnin
 
             output = model(input_ids, attention_mask)
 
-            loss = criterion(output, train_label.float().unsqueeze(1))
+            loss = criterion(output, train_label.float().unsqueeze(1)) * 0.5
 
             total_loss_train += loss.item()
 
@@ -751,7 +751,7 @@ def train_classifier(base_model_name, test_model_path, train_df, val_df, learnin
                 input_ids = adversary_train_input['input_ids'].squeeze(1).to(device)
                 adversary_train_label = adversary_train_label.to(device)
                 output = model(input_ids, attention_mask)
-                loss = criterion(output, adversary_train_label.float().unsqueeze(1))
+                loss = criterion(output, adversary_train_label.float().unsqueeze(1)) * 2
                 total_loss_adversary_train += loss.item()
                 acc = ((output >= 0.5).int() == adversary_train_label.unsqueeze(1)).sum().item()
                 total_acc_train += acc
@@ -839,6 +839,8 @@ def train_generator(
             # 判别失败
             if get_text_predictions(classifier_model, classifier_tokenizer, [cur_rewrite_text])[0]:
                 cur_rewrite_texts.append(cur_rewrite_text)
+                if min_available_score is None:
+                    break
             if len(cur_rewrite_texts) >= try_generate_min_nums:
                 break
 
@@ -975,26 +977,26 @@ if __name__ == '__main__':
     # with open('../roberta_test/data/hc3_row.train', 'r', encoding='utf-8') as train_f:
     #     ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
     # train_generator(
-    #     'roberta-base', './dpo_2.pt',
-    #     "mistralai/Mistral-7B-Instruct-v0.2", './dpo_2/1/final_checkpoint',
+    #     'roberta-base', 'hc3_row.pt',
+    #     "mistralai/Mistral-7B-Instruct-v0.2", './hc3_all_1/final_checkpoint',
     #     3, 10,
-    #     50,
+    #     None,
     #     ai_texts,
     #     1000,
-    #     './dpo_3/'
+    #     './dpo_no_blue/'
     #     '1'
     # )
 
     train_file = '../roberta_test/data/hc3_row.train'
     train_df, val_df = load_train_and_val_df(train_file)
     train_classifier(
-        'roberta-base', 'dpo_2.pt',
+        'roberta-base', 'roberta-base',
         train_df, val_df,
         learning_rate=1e-5,
         epochs=5,
         batch_size=16,
-        save_name='dpo_3.pt',
-        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_3/1/final_checkpoint'),
+        save_name='dpo_no_blue.pt',
+        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_no_blue/1/final_checkpoint'),
         adversary_data_rate=2
     )
 

@@ -134,7 +134,7 @@ def init_reward_model(reward_model_name, reward_model_path=None):
                     results_predictions.append(output)
 
             npmpy_results = torch.cat(results_predictions).cpu().detach().numpy()
-            return [x[0] * 1.0 for x in npmpy_results]
+            return [(1 - x[0]) * 1.0 for x in npmpy_results]
 
         return reward_func
 
@@ -279,7 +279,7 @@ if __name__ == '__main__':
         'max_new_tokens': 512,
     }
 
-    save_model_path = './ppo_1'
+    save_model_path = './ppo_2'
 
     begin_train_ppo(
         ppo_trainer,

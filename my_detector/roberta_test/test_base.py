@@ -205,7 +205,9 @@ if __name__ == '__main__':
     ]
     for test_f in test_files:
         print(test_f)
-        test_multi_prompt('hc3_row_adt.pt', test_f, 1000, test_f)
+        test_multi_prompt('hc3_adt.alpha.0.0.pt', test_f, 1000, test_f)
+
+
     # test_file = './data/hc3_plus_qa_row.test'
     # model, tokenizer = init_test_model_and_tokenizer(test_model_path=save_model)
     # test_dataloader, test_labels, test_domains, test_prompts = get_test_dataloader_and_labels(tokenizer, test_file)

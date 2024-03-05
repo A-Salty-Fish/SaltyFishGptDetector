@@ -2,9 +2,9 @@ import json
 
 from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModel
-# tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True)
-# model = AutoModel.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True).half().cuda()
-# model = model.eval()
+tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True)
+model = AutoModel.from_pretrained("THUDM/chatglm3-6b", trust_remote_code=True).half().cuda()
+model = model.eval()
 
 
 def call_with_messages(message):
@@ -112,13 +112,14 @@ if __name__ == '__main__':
         # 'open_qa.test',
         # 'open_qa.rewrite.test',
         'reddit_chatGPT.test',
-        'reddit_cohere.test',
-        'reddit_davinci.test',
-        'reddit_dolly.test',
-        'reddit_flant5.test',
+        # 'reddit_cohere.test',
+        # 'reddit_davinci.test',
+        # 'reddit_dolly.test',
+        # 'reddit_flant5.test',
         'wikipedia_chatgpt.test',
-        'wikipedia_cohere.test',
-        'wikipedia_davinci.test',
-        'wikipedia_dolly.test',
+        'hc3_row.test'
+        # 'wikipedia_cohere.test',
+        # 'wikipedia_davinci.test',
+        # 'wikipedia_dolly.test',
     ]
     mix_rewrite_and_human_data('glm', nums=1000)

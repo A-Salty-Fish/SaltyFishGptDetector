@@ -141,7 +141,7 @@ class MyClassifier(nn.Module):
 
 
 def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size=16,
-          save_name="best_model.pt", adversary_generator=None):
+          save_name="best_model.pt", adversary_generator=None, adv_loss_alpha = 1.0):
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -206,7 +206,7 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
                 input_ids = adversary_train_input['input_ids'].squeeze(1).to(device)
                 adversary_train_label = adversary_train_label.to(device)
                 output = model(input_ids, attention_mask)
-                loss = criterion(output, adversary_train_label.float().unsqueeze(1))
+                loss = criterion(output, adversary_train_label.float().unsqueeze(1)) * adv_loss_alpha
                 total_loss_adversary_train += loss.item()
                 acc = ((output >= 0.5).int() == adversary_train_label.unsqueeze(1)).sum().item()
                 total_acc_train += acc
@@ -241,8 +241,8 @@ def train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epo
                   f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
                   f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
 
-            if best_val_loss > total_loss_val + total_loss_adversary_train:
-                best_val_loss = total_loss_val + total_loss_adversary_train
+            if best_val_loss > total_loss_val + total_loss_adversary_train * adv_loss_alpha:
+                best_val_loss = total_loss_val + total_loss_adversary_train * adv_loss_alpha
                 torch.save(model, save_name)
                 print("Saved model")
                 early_stopping_threshold_count = 0
@@ -284,6 +284,7 @@ def init_adversary_generator(train_df, random_generate=False,random_select_key=N
         'qa': 'The following is a response to a question, please re-answer the question based on this response, {without any useless content}:'
     }
 
+
     adversary_generator = AdversaryGenerator(
         local_val_files_map=local_val_file_map,
         prompts_map=prompts_map,
@@ -302,12 +303,13 @@ def begin_train(train_data_file,
                 batch_size=16,
                 learning_rate=1e-5,
                 epochs=5,
+                adv_loss_alpha=1.0
                 ):
     model, tokenizer = init_model_and_tokenizer(base_model_name)
     train_df, val_df = load_train_and_val_df(train_data_file)
     train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size)
     train(model, tokenizer, train_dataloader, val_dataloader, learning_rate, epochs, batch_size,
-          save_name=model_save_name, adversary_generator=adversary_generator)
+          save_name=model_save_name, adversary_generator=adversary_generator, adv_loss_alpha=adv_loss_alpha)
 
 def begin_train_hc3_row():
     train_file = './data/hc3_row.train'
@@ -357,6 +359,16 @@ def begin_train_hc3_row_adt():
         'hc3_row_adt.pt'
     )
 
+def begin_train_hc3_adt_alpha(alpha):
+    train_file = './data/hc3_row.train'
+    train_df, val_df = load_train_and_val_df(train_file)
+    adversary_generator = init_adversary_generator(train_df, random_generate=False, random_select_key=None)
+    begin_train(
+        train_file,
+        adversary_generator,
+        'hc3_adt.alpha.' + str(alpha) + '.pt',
+        adv_loss_alpha=alpha
+    )
 
 if __name__ == '__main__':
     # batch_size = 16
@@ -378,5 +390,7 @@ if __name__ == '__main__':
     # begin_train_hc3_adt()
     # begin_train_hc3_random_adt()
     # begin_train_hc3_random_select_adt()
-    begin_train_hc3_row_adt()
-
+    # begin_train_hc3_row_adt()
+    begin_train_hc3_adt_alpha(0.0)
+    begin_train_hc3_adt_alpha(10.0)
+    pass
