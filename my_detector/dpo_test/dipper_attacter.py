@@ -1,4 +1,5 @@
 import json
+import os
 import time
 
 import torch
@@ -196,8 +197,20 @@ if __name__ == "__main__":
 
     # print(paraphase(dp, input_text))
 
-    generate_datas(dp, 'dp', '.dp')
+    for file in os.listdir('./dp'):
+        print(file)
+        count = 0
+        with open('./dp/' + file, 'r', encoding='utf-8') as in_f:
+            for line in in_f:
+                json_obj = json.loads(line)
+                if json_obj['ai_rewrite'] is None:
+                    print(json_obj)
+                else:
+                    count+=1
+        print(count)
 
-    mix_rewrite_and_human_data('dp')
+    # generate_datas(dp, './dp/', '.dp')
+    #
+    # mix_rewrite_and_human_data('dp')
 
     pass
