@@ -28,6 +28,8 @@ import openai_roberta_large
 import radar_vicuna
 import roberta_adt
 import IntrinsicDim
+import hc3_single_ft
+import radar_vicuna_ft
 
 support_methods = [
     'gltr',
@@ -39,6 +41,8 @@ support_methods = [
     'openai-roberta-large',
     'radar-vicuna',
     'detect_gpt',
+    'hc3_single_ft',
+    'radar_vicuna_ft',
     # 'roberta_adt'
 ]
 
@@ -149,6 +153,23 @@ def get_classifier(method):
 
         classifier = classify
 
+    if method == 'hc3_single_ft':
+        model = hc3_single_ft.init_classifier()
+
+        def classify(text):
+            return hc3_single_ft.classify_is_human(model, text=text)
+
+        classifier = classify
+
+    if method == 'radar_vicuna_ft':
+        model = radar_vicuna_ft.init_classifier()
+
+        def classify(text):
+            return radar_vicuna_ft.classify_is_human(model, text=text)
+
+        classifier = classify
+
+
     end_time = time.time()
     print("time to init model and classifier was {} seconds.".format(end_time - start_time))
 
@@ -162,7 +183,7 @@ def get_classifier(method):
                 words = re.split(r'\s+|\n|\r|\t', text)
                 return classifier(" ".join(words[0:200]))
             except Exception as e:
-                print(e)
+                # print(e)
                 # print(text)
                 return True
         try:
@@ -560,9 +581,20 @@ def multi_prompt_test_my(method, in_file):
     return all_results
 
 
-def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', max_nums=1000):
+def test_method_files(method, files, save_file_prefix, max_nums=1000):
+    tmp_result = test_hc3_mix_multi(method,
+                                    files,
+                                    max_nums,
+                                    'json_arr'
+                                    )
+    output_test_result_table(tmp_result, save_file_prefix + method)
+
+
+def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', prefix = 'test_', max_nums=1000):
     for method in support_methods:
         if method == 'detect_gpt':
+            continue
+        if method != 'radar_vicuna_ft' and method != 'hc3_single_ft':
             continue
         tmp_result = test_hc3_mix_multi(method,
                                         [
@@ -571,7 +603,7 @@ def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', max_nums=1000
                                         max_nums,
                                         'json_arr'
                                         )
-        output_test_result_table(tmp_result, 'dpo_1_' +  method)
+        output_test_result_table(tmp_result, prefix +  method)
 
 
 
@@ -768,12 +800,12 @@ if __name__ == '__main__':
         'cheat_polish.test',
         'ghostbuster_claude.test',
         'hc3_plus_qa_row.test',
-        'open_qa.academic.test',
-        'open_qa.continue.test',
-        'open_qa.difficult.test',
-        'open_qa.easy.test',
-        'open_qa.test',
-        'open_qa.rewrite.test',
+        # 'open_qa.academic.test',
+        # 'open_qa.continue.test',
+        # 'open_qa.difficult.test',
+        # 'open_qa.easy.test',
+        # 'open_qa.test',
+        # 'open_qa.rewrite.test',
         'reddit_chatGPT.test',
         'reddit_cohere.test',
         'reddit_davinci.test',
@@ -784,10 +816,10 @@ if __name__ == '__main__':
         'wikipedia_davinci.test',
         'wikipedia_dolly.test',
     ]
-    # # test file existed
-    # for file in files:
-    #     with open(base_dir + file, 'r', encoding='utf-8') as test_f:
-    #         print(file)
+    # test file existed
+    for file in files:
+        with open(base_dir + file, 'r', encoding='utf-8') as test_f:
+            print(file)
         # tmp_result = test_hc3_mix_multi('gltr',
         #                                 [
         #                                     base_dir + file for file in files
@@ -816,4 +848,12 @@ if __name__ == '__main__':
     #                                         )
     #         output_test_result_table(tmp_result, 'adt_' +  method)
 
-    test_all_method_dir()
+    # test_all_method_dir()
+
+    # test_method_files('radar_vicuna_ft', [base_dir + f for f in files], 'ft', 1000)
+    # test_method_files('hc3_single_ft', [base_dir + f for f in files], 'ft', 1000)
+
+    test_all_method_dir('../my_detector/dpo_test/qwen/', 'qwen_')
+    test_all_method_dir('../my_detector/dpo_test/dpo_1/', 'dpo1_')
+    test_all_method_dir('../my_detector/dpo_test/dp/', 'dp_')
+

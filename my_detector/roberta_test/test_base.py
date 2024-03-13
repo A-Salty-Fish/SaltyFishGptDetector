@@ -205,7 +205,7 @@ if __name__ == '__main__':
     ]
     for test_f in test_files:
         print(test_f)
-        test_multi_prompt('hc3_adt.alpha.0.0.pt', test_f, 1000, test_f)
+        test_multi_prompt('../', test_f, 1000, test_f)
 
 
     # test_file = './data/hc3_plus_qa_row.test'

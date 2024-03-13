@@ -995,8 +995,8 @@ if __name__ == '__main__':
         learning_rate=1e-5,
         epochs=5,
         batch_size=16,
-        save_name='dpo_no_blue.pt',
-        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './dpo_no_blue/1/final_checkpoint'),
+        save_name='ppo_1.pt',
+        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './ppo_1/final_checkpoint'),
         adversary_data_rate=2
     )
 

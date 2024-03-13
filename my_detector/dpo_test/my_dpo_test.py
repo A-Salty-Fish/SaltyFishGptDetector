@@ -295,17 +295,33 @@ if __name__ == '__main__':
 
     # test_classifier_base_dir('roberta-base', './dpo_3.pt', './qwen/', 1000)
 
-    test_dir = './qwen/'
+    test_dir = './dp/'
     for model_path in [
+        './dpo_1.pt',
+        # './dpo_1_2.pt',
         # './dpo_3.pt',
         # './dpo_2.pt',
-        # './dpo_1.pt',
-        # './dpo_1_2.pt',
         # './hc3_adt.pt',
         # './hc3_row.pt',
-        # './dpo_2_2.pt',
+        # './dpo_2_3.pt',
+        # './dpo_3_2.pt',
+        # './dpo_no_blue.pt',
+        # './ppo_1.pt',
+    ]:
+        test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
+
+    test_dir = './dpo_1/'
+    for model_path in [
+        # './dpo_1.pt',
+        # './dpo_1_2.pt',
+        # './dpo_3.pt',
+        # './dpo_2.pt',
+        # './hc3_adt.pt',
+        # './hc3_row.pt',
+        # './dpo_2_3.pt',
         # './dpo_3_2.pt',
         './dpo_no_blue.pt',
+        # './ppo_1.pt',
     ]:
         test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
 
