@@ -57,9 +57,9 @@ class DipperParaphraser(object):
         return output_text
 
 
-def paraphase(dp, input_text):
+def paraphase(dp, input_text, lex_diversity=20):
     prompt = "Please rewrite the following AI-generated text to make it more like human text, {without any useless content}:"
-    output_l60_sample = dp.paraphrase(input_text, lex_diversity=60, order_diversity=0, prefix=prompt, do_sample=True,
+    output_l60_sample = dp.paraphrase(input_text, lex_diversity=lex_diversity, order_diversity=0, prefix=prompt, do_sample=True,
                                       top_p=0.75, top_k=None, max_length=512)
 
     return output_l60_sample
@@ -124,7 +124,7 @@ def generate_paraphase_data(file_path, file_name, dp, output_dir='./qwen/', file
                 if cur < existed_lines:
                     continue
                 ai_content = ai_obj['content']
-                ai_rewrite = paraphase(dp, ai_obj['content'])
+                ai_rewrite = paraphase(dp, ai_obj['content'], 100)
                 new_ai_obj = {
                     'label': 1,
                     'prompt': prompt_template + ai_obj['content'],
@@ -163,7 +163,7 @@ def mix_rewrite_and_human_data(dir, nums=1000):
         with open(base_dir + file, 'r', encoding='utf-8') as row_in_f:
             row_json = json.load(row_in_f)
             human_jsons = [x for x in row_json if x['label'] == 0][0: nums]
-        with open(dir + '/' + file + '.' + dir + '.jsonl', 'r', encoding='utf-8') as in_f:
+        with open(dir + '/' + file + '.' + 'dp' + '.jsonl', 'r', encoding='utf-8') as in_f:
             ai_jsons = []
             for line in in_f:
                 ai_jsons.append(json.loads(line))
@@ -204,8 +204,8 @@ if __name__ == "__main__":
     #     with open('./dp/' + file, 'r', encoding='utf-8') as in_f:
     #         print(len(json.load(in_f)))
 
-    # generate_datas(dp, './dp/', '.dp')
+    # generate_datas(dp, './dp_100/', '.dp')
     #
-    # mix_rewrite_and_human_data('dp')
+    mix_rewrite_and_human_data('dp_100')
 
     pass
