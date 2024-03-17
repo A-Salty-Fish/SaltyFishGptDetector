@@ -1,4 +1,5 @@
 import json
+import os
 
 import nltk
 import numpy as np
@@ -192,6 +193,79 @@ def test_qwen_score():
 
 
 
+def get_dir_blue_scores(model, tokenizer,dir):
+    print(dir)
+    for file in os.listdir(dir):
+        if file.endswith('.jsonl'):
+            print(file)
+            with open(dir + file, 'r', encoding='utf-8') as in_f, open('./' + file + '.score', 'a', encoding='utf-8') as out_f:
+                json_objs = []
+                for line in in_f:
+                    json_obj = json.loads(line)
+                    json_objs.append(json_obj)
+                for json_obj in tqdm(json_objs):
+                    try:
+                        out_f.write(str(get_bleu_score(model, tokenizer, json_obj['ai'], json_obj['ai_rewrite'])) + '\n')
+                    except Exception as e:
+                        print(e)
+
+    # print("dp_60")
+    # for file in os.listdir('./dp/'):
+    #     if file.endswith('.jsonl'):
+    #         print(file)
+    #         with open('./dp/' + file, 'r', encoding='utf-8') as in_f, open('./' + file + '.score', 'a',
+    #                                                                        encoding='utf-8') as out_f:
+    #             json_objs = []
+    #             for line in in_f:
+    #                 json_obj = json.loads(line)
+    #                 json_objs.append(json_obj)
+    #             for json_obj in tqdm(json_objs):
+    #                 try:
+    #                     out_f.write(
+    #                         str(get_bleu_score(model, tokenizer, json_obj['ai'], json_obj['ai_rewrite'])) + '\n')
+    #                 except Exception as e:
+    #                     print(e)
+    # print("dpo_1")
+    # for file in os.listdir('./dpo_1/'):
+    #     if file.endswith('.jsonl') and file.find('hc3_row') == -1:
+    #         print(file)
+    #         with open('./dpo_1/' + file, 'r', encoding='utf-8') as in_f, open('./' + file + '.score', 'a',
+    #                                                                           encoding='utf-8') as out_f:
+    #             json_objs = []
+    #             for line in in_f:
+    #                 json_obj = json.loads(line)
+    #                 json_objs.append(json_obj)
+    #             for json_obj in tqdm(json_objs):
+    #                 try:
+    #                     out_f.write(
+    #                         str(get_bleu_score(model, tokenizer, json_obj['ai'], json_obj['ai_rewrite'])) + '\n')
+    #                 except Exception as e:
+    #                     print(e)
+    #
+    # print("qwen")
+    # for file in os.listdir('./qwen/'):
+    #     if file.endswith('.jsonl') and file.find('hc3_row') == -1:
+    #         print(file)
+    #         with open('./qwen/' + file, 'r', encoding='utf-8') as in_f, open('./' + file + '.score', 'a',
+    #                                                                          encoding='utf-8') as out_f:
+    #             json_objs = []
+    #             for line in in_f:
+    #                 json_obj = json.loads(line)
+    #                 json_objs.append(json_obj)
+    #             for json_obj in tqdm(json_objs):
+    #                 try:
+    #                     out_f.write(
+    #                         str(get_bleu_score(model, tokenizer, json_obj['ai'], json_obj['ai_rewrite'])) + '\n')
+    #                 except Exception as e:
+    #                     print(e)
+
+
+def analyze_bluert_scores(dir):
+
+    pass
+
+
+
 if __name__ == '__main__':
 
     # text1 = "This is the first text"
@@ -251,20 +325,25 @@ Instead of assuming X is undervalued and Y overvalued, analyze:
 X: Why the underperformance?
 Y: Why the outperformance?
 Bear in mind, P/\E comparisons only provide a partial insight!'''
-    print(get_bleu_score(model, tokenizer, text1, text1))
-    print(len(text2.split(' ')))
-    text1_char_set = []
-    for x in text1:
-        if x not in text1_char_set:
-            text1_char_set.append(x)
-    print([x for x in text2 if x not in text1_char_set])
-    text2 = text2.replace('\\', '')
-    text2 = text2.replace('\n', '')
-    print(get_bleu_score(model, tokenizer, text1, text2))
-    print(get_bleu_score(model, tokenizer, text2, " ".join(text2.split(' ')[0:400])))
-    print(get_bleu_score(model, tokenizer, text1, " ".join(text2.split(' ')[0:400])))
+    # print(get_bleu_score(model, tokenizer, text1, text1))
+    # print(len(text2.split(' ')))
+    # text1_char_set = []
+    # for x in text1:
+    #     if x not in text1_char_set:
+    #         text1_char_set.append(x)
+    # print([x for x in text2 if x not in text1_char_set])
+    # text2 = text2.replace('\\', '')
+    # text2 = text2.replace('\n', '')
+    # print(get_bleu_score(model, tokenizer, text1, text2))
+    # print(get_bleu_score(model, tokenizer, text2, " ".join(text2.split(' ')[0:400])))
+    # print(get_bleu_score(model, tokenizer, text1, " ".join(text2.split(' ')[0:400])))
+
+
 
 
     # test_qwen_score()
+
+    get_dir_blue_scores(model, tokenizer,'./dp_20/')
+    get_dir_blue_scores(model, tokenizer,'./dp_100/')
 
     pass
