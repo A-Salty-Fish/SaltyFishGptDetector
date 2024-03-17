@@ -590,11 +590,13 @@ def test_method_files(method, files, save_file_prefix, max_nums=1000):
     output_test_result_table(tmp_result, save_file_prefix + method)
 
 
-def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', prefix = 'test_', max_nums=1000):
+def test_all_method_dir(base_dir='../my_detector/dpo_test/dpo_1/', prefix = 'test_', max_nums=1000, excluded=None):
     for method in support_methods:
         if method == 'detect_gpt':
             continue
-        if method != 'radar_vicuna_ft' and method != 'hc3_single_ft':
+        # if method != 'radar_vicuna_ft' and method != 'hc3_single_ft':
+        #     continue
+        if method in excluded:
             continue
         tmp_result = test_hc3_mix_multi(method,
                                         [
@@ -853,7 +855,20 @@ if __name__ == '__main__':
     # test_method_files('radar_vicuna_ft', [base_dir + f for f in files], 'ft', 1000)
     # test_method_files('hc3_single_ft', [base_dir + f for f in files], 'ft', 1000)
 
-    test_all_method_dir('../my_detector/dpo_test/qwen/', 'qwen_')
-    test_all_method_dir('../my_detector/dpo_test/dpo_1/', 'dpo1_')
-    test_all_method_dir('../my_detector/dpo_test/dp/', 'dp_')
+    # test_all_method_dir('../my_detector/dpo_test/qwen/', 'qwen_')
+    # test_all_method_dir('../my_detector/dpo_test/dpo_1/', 'dpo1_')
+    # test_all_method_dir('../my_detector/dpo_test/dp/', 'dp_')
+    test_all_method_dir('../my_detector/dpo_test/dp_100/', 'dp_100', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    ])
 
