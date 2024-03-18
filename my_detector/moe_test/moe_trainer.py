@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
@@ -6,6 +7,8 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from torch.optim import Adam
 from transformers import AutoTokenizer, AutoModel
+
+device = 'cuda'
 
 # 训练集
 class MyTrainDataset(Dataset):
@@ -31,16 +34,19 @@ class MyTrainDataset(Dataset):
     def __len__(self):
         return min(len(self.texts), len(self.labels))
 
+
 def load_train_and_val_df(train_data_path="../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
     train_file = pd.read_json(train_data_path)
     train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
     return train_df, val_df
+
 
 def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shuffle=False):
     train_dataloader = DataLoader(MyTrainDataset(train_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
     val_dataloader = DataLoader(MyTrainDataset(val_df, tokenizer), batch_size=batch_size, shuffle=shuffle)
 
     return train_dataloader, val_dataloader
+
 
 class MyClassifier(nn.Module):
     def __init__(self, base_model):
@@ -64,6 +70,7 @@ class MyClassifier(nn.Module):
 
         return x
 
+
 # 加载两个模型
 def init_test_model_and_tokenizer(base_model_name="roberta-base", test_model_path='best_model.pt'):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name)
@@ -75,7 +82,8 @@ def init_test_model_and_tokenizer(base_model_name="roberta-base", test_model_pat
 
     return model, tokenizer
 
-def get_attention_mask_ids_prediction(model, attention_mask, input_ids, bar=0.5):
+
+def get_gate_attention_mask_ids_prediction(model, attention_mask, input_ids, bar=0.5):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     model = model.to(device)
@@ -86,7 +94,61 @@ def get_attention_mask_ids_prediction(model, attention_mask, input_ids, bar=0.5)
         output = (output > bar).int()
         results_predictions.append(output)
 
-    return torch.cat(results_predictions).cpu().detach().numpy()[0]
+    result = torch.cat(results_predictions).cpu().detach().numpy()
+    return result
+
+
+def get_model_attention_mask_ids_prediction(model, attention_mask, input_ids, bar=0.5):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    model = model.to(device)
+    results_predictions = []
+    with torch.no_grad():
+        model.eval()
+        output = model(input_ids, attention_mask)
+        output = (output > bar).int()
+        results_predictions.append(output)
+    result = torch.cat(results_predictions).cpu().detach().numpy()
+    # print(result)
+    return result
+
+
+def gate_prediction(gate_outputs, model_1, model_2, attention_mask, input_ids, bar=0.5):
+    output_labels = []
+    model_1_results = get_model_attention_mask_ids_prediction(model_1, attention_mask, input_ids)
+    model_2_results = get_model_attention_mask_ids_prediction(model_2, attention_mask, input_ids)
+
+    for i in range(0, len(gate_outputs)):
+        if gate_outputs[i] < bar:
+            output_labels.append(model_1_results[i])
+        elif gate_outputs[i] >= bar:
+            output_labels.append(model_2_results[i])
+    # for output1 in gate_outputs:
+    #     # print(output1)
+    #     if output1[0] < bar:
+    #         output_labels.append(get_gate_attention_mask_ids_prediction(model_1, attention_mask, input_ids))
+    #     elif output1[0] >= bar:
+    #         output_labels.append(get_gate_attention_mask_ids_prediction(model_2, attention_mask, input_ids))
+    result = torch.from_numpy(np.array(output_labels)).to(device)
+    # print(result)
+    return result
+
+def convert_train_to_actual_label(train_label,  model_1, model_2, attention_mask, input_ids):
+    model_1_results = get_model_attention_mask_ids_prediction(model_1, attention_mask, input_ids)
+    model_2_results = get_model_attention_mask_ids_prediction(model_2, attention_mask, input_ids)
+    results = []
+
+    for i in range(0, len(train_label)):
+        cur_label = train_label[i]
+        if model_1_results[i][0] != cur_label and model_2_results[i][0] != cur_label:
+            results.append(0.5)
+        elif model_1_results[i][0] == cur_label and model_2_results[i][0] == cur_label:
+            results.append(0.5)
+        elif model_1_results[i][0] == cur_label:
+            results.append(0.0)
+        elif model_2_results[i][0] == cur_label:
+            results.append(1.0)
+    return torch.from_numpy(np.array(results)).to(device)
 
 
 def train(base_model,
@@ -94,7 +156,8 @@ def train(base_model,
           model_2,
           train_dataloader, val_dataloader,
           learning_rate=1e-5, epochs=5,
-          save_name="best_model.pt"):
+          save_name="best_model.pt",
+          bar=0.5):
     best_val_loss = float('inf')
     early_stopping_threshold_count = 0
 
@@ -121,18 +184,32 @@ def train(base_model,
 
             output = base_model(input_ids, attention_mask)
 
-            output_labels = []
-            for output1 in output:
-                if output1 == 0:
-                    output_labels.append(get_attention_mask_ids_prediction(model_1, attention_mask, input_ids))
-                elif output1 == 1:
-                    output_labels.append(get_attention_mask_ids_prediction(model_2, attention_mask, input_ids))
+            # print(train_label)
 
-            loss = criterion(output_labels, train_label.float().unsqueeze(1))
+            actual_label = convert_train_to_actual_label(train_label, model_1, model_2, attention_mask, input_ids)
+            # print(output)
+            # print(actual_label)
+
+            # gate_outputs = gate_prediction(output, model_1, model_2, attention_mask, input_ids)
+            #
+            # for i in range(0, len(gate_outputs)):
+            #     output[i] = gate_outputs[i]
+
+            # print(gate_outputs)
+            # print(train_label.float().unsqueeze(1))
+
+            loss = criterion(output, actual_label.float().unsqueeze(1))
 
             total_loss_train += loss.item()
 
-            acc = (output_labels == train_label.unsqueeze(1)).sum().item()
+            # acc = (output == actual_label.unsqueeze(1)).sum().item()
+            acc = 0
+            for i in range(0, len(output)):
+                if (output[i][0] >= bar) and (actual_label[i] >= bar):
+                    acc+=1
+                elif (output[i][0] < bar) and (actual_label[i] < bar):
+                    acc+=1
+
             total_acc_train += acc
 
             loss.backward()
@@ -155,18 +232,21 @@ def train(base_model,
 
                 output = base_model(input_ids, attention_mask)
 
-                output_labels = []
-                for output1 in output:
-                    if output1 == 0:
-                        output_labels.append(get_attention_mask_ids_prediction(model_1, attention_mask, input_ids))
-                    elif output1 == 1:
-                        output_labels.append(get_attention_mask_ids_prediction(model_2, attention_mask, input_ids))
+                actual_label = convert_train_to_actual_label(val_label, model_1, model_2, attention_mask, input_ids)
+                # gate_outputs = gate_prediction(output, model_1, model_2, attention_mask, input_ids)
 
-                loss = criterion(output_labels, val_label.float().unsqueeze(1))
+                loss = criterion(output, actual_label.float().unsqueeze(1))
 
                 total_loss_val += loss.item()
 
-                acc = (output_labels == val_label.unsqueeze(1)).sum().item()
+                # acc = (output == actual_label.unsqueeze(1)).sum().item()
+                acc = 0
+                for i in range(0, len(output)):
+                    if (output[i][0] >= bar) and (actual_label[i] >= bar):
+                        acc += 1
+                    elif (output[i][0] < bar) and (actual_label[i] < bar):
+                        acc += 1
+
                 total_acc_val += acc
 
             print(f'Epochs: {epoch + 1} '
@@ -187,14 +267,14 @@ def train(base_model,
 if __name__ == '__main__':
     model_name = 'roberta-base'
 
-    model1_path = ''
+    model1_path = '../dpo_test/hc3_adt.pt'
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
-    model2_path = ''
+    model2_path = '../dpo_test/dpo_1_2.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
 
     base_model, base_tokenizer = init_test_model_and_tokenizer(model_name, model_name)
 
-    train_file = './data/hc3_mix_multi_prompt.train'
+    train_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
     train_df, val_df = load_train_and_val_df(train_file)
     train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, base_tokenizer, 16)
     train(
