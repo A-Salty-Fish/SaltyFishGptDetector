@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 import random
@@ -344,8 +345,30 @@ if __name__ == '__main__':
     # generate_glm_datas('./data/9.jsonl', model, tokenizer)
     # generate_glm_datas('./data/10.jsonl', model, tokenizer)
 
+    qwen_model, qwen_tokenizer = init_qwen_model_and_tokenizer()
 
+    generate_qwen_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    generate_qwen_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    generate_qwen_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    generate_qwen_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    del qwen_tokenizer, qwen_model
+    gc.collect()  # 执行垃圾回收
+    torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
 
+    dp = DipperParaphraser()
+    generate_dp_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', dp)
+    generate_dp_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', dp)
+    generate_dp_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', dp)
+    generate_dp_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', dp)
+    del dp
+    gc.collect()  # 执行垃圾回收
+    torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
+
+    my_model, my_tokenizer = load_my_paraphase_model(peft_path='../dpo_test/dpo_1/1/final_checkpoint/')
+    generate_my_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    generate_my_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    generate_my_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    generate_my_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
 
     pass
 

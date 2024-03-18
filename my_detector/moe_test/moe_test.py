@@ -61,6 +61,20 @@ class MyClassifier(nn.Module):
         return x
 
 
+def get_attention_mask_ids_prediction(model, attention_mask, input_ids, bar=0.5):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    model = model.to(device)
+    results_predictions = []
+    with torch.no_grad():
+        model.eval()
+        output = model(input_ids, attention_mask)
+        output = (output > bar).int()
+        results_predictions.append(output)
+
+    return torch.cat(results_predictions).cpu().detach().numpy()[0]
+
+
 def get_text_predictions(model, loader, bar=0.5):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -80,6 +94,36 @@ def get_text_predictions(model, loader, bar=0.5):
             results_predictions.append(output)
 
     return torch.cat(results_predictions).cpu().detach().numpy()
+
+
+
+def gate_prediction(model, model_1, model_2, loader, gate_bar=0.5, classify_bar=0.5):
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    model = model.to(device)
+
+    model_1_result = get_text_predictions(model_1, loader, classify_bar)
+    model_2_result = get_text_predictions(model_2, loader, classify_bar)
+
+    results_predictions = []
+    with torch.no_grad():
+        model.eval()
+        for data_input, _ in tqdm(loader):
+            attention_mask = data_input['attention_mask'].to(device)
+            input_ids = data_input['input_ids'].squeeze(1).to(device)
+
+            output = model(input_ids, attention_mask)
+
+            # output = (output > bar).int()
+            for i in range(0, len(output)):
+                if output[i][0] >= gate_bar:
+                    results_predictions.append(model_2_result[i])
+                elif output[i][0] < gate_bar:
+                    results_predictions.append(model_1_result[i])
+
+    return results_predictions
+
 
 
 # 加载两个模型
@@ -121,11 +165,17 @@ def get_acc(predictions, test_labels):
 
 
 if __name__ == '__main__':
-    test_path = ''
-    test_file = ''
+    model_name = 'roberta-base'
+
+    model1_path = '../dpo_test/hc3_adt.pt'
+    model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
+    model2_path = '../dpo_test/dpo_1_2.pt'
+    model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
+    test_path = "best_model.pt"
+    test_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
     test_model, test_tokenizer = init_test_model_and_tokenizer(test_model_path=test_path)
     test_dataloader, test_labels = get_test_dataloader_and_labels(test_tokenizer, test_file, 16, 1000)
-    text_predictions = get_text_predictions(test_model, test_dataloader)
+    text_predictions = gate_prediction(test_model, model1, model2, test_dataloader)
     acc_result = get_acc(text_predictions, test_labels)
-
+    print(acc_result)
     pass
