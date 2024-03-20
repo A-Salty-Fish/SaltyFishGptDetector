@@ -114,6 +114,22 @@ def load_arxiv_datas(file_path):
         return json_objs
 
 
+def my_dpo_chat(model, tokenizer, context):
+    messages = [
+        {"role": "user", "content": context}
+    ]
+
+    encodeds = tokenizer.apply_chat_template(messages, return_tensors="pt")
+
+    model_inputs = encodeds.to(device)
+
+    generated_ids = model.generate(model_inputs, max_new_tokens=1000, do_sample=True,
+                                   pad_token_id=tokenizer.eos_token_id)
+    decoded = tokenizer.batch_decode(generated_ids)
+    return decoded[0].split('[/INST]')[1].replace('</s>', '')
+
+
+
 def generate_mix_datas(file_path, model, tokenizer):
     # prompt_template = 'please continue to write the following content: '
     prompt_template = 'Please rewrite the following paragraph so that it is as different as possible from the original text without changing its meaning'
@@ -307,7 +323,7 @@ def generate_my_paraphase_datas(file_path, model, tokenizer):
         for line in in_f:
             json_objs.append(json.loads(line))
         for json_obj in tqdm(json_objs):
-            json_obj['ai_rewrite'] = mix_chat(model, tokenizer, prompt_template + json_obj['ai'])
+            json_obj['ai_rewrite'] = my_dpo_chat(model, tokenizer, prompt_template + json_obj['ai'])
             out_f.write(json.dumps(json_obj) + '\n')
 
     pass
@@ -345,24 +361,24 @@ if __name__ == '__main__':
     # generate_glm_datas('./data/9.jsonl', model, tokenizer)
     # generate_glm_datas('./data/10.jsonl', model, tokenizer)
 
-    qwen_model, qwen_tokenizer = init_qwen_model_and_tokenizer()
-
-    generate_qwen_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
-    generate_qwen_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
-    generate_qwen_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
-    generate_qwen_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
-    del qwen_tokenizer, qwen_model
-    gc.collect()  # 执行垃圾回收
-    torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
-
-    dp = DipperParaphraser()
-    generate_dp_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', dp)
-    generate_dp_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', dp)
-    generate_dp_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', dp)
-    generate_dp_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', dp)
-    del dp
-    gc.collect()  # 执行垃圾回收
-    torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
+    # qwen_model, qwen_tokenizer = init_qwen_model_and_tokenizer()
+    #
+    # generate_qwen_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    # generate_qwen_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    # generate_qwen_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    # generate_qwen_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', qwen_model, qwen_tokenizer)
+    # del qwen_tokenizer, qwen_model
+    # gc.collect()  # 执行垃圾回收
+    # torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
+    #
+    # dp = DipperParaphraser()
+    # generate_dp_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', dp)
+    # generate_dp_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', dp)
+    # generate_dp_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', dp)
+    # generate_dp_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', dp)
+    # del dp
+    # gc.collect()  # 执行垃圾回收
+    # torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
 
     my_model, my_tokenizer = load_my_paraphase_model(peft_path='../dpo_test/dpo_1/1/final_checkpoint/')
     generate_my_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
