@@ -268,6 +268,8 @@ def test_classifier_multi_files(classifier_name, classifier_path, test_files, ma
         acc_result = get_acc(text_predictions, test_labels)
         acc_str = output_acc(test_file.split('/')[-1], acc_result)
         acc_str_result += acc_str + '\n'
+    del classifier_model, classifier_tokenizer
+
     return acc_str_result
 
 
@@ -295,33 +297,31 @@ if __name__ == '__main__':
 
     # test_classifier_base_dir('roberta-base', './dpo_3.pt', './qwen/', 1000)
 
-    test_dir = './dp/'
+    # test_dir = './dp_20/'
+    # for model_path in [
+    #     './dpo_1.pt',
+    #     './dpo_1_2.pt',
+    #     './dpo_3.pt',
+    #     './dpo_2.pt',
+    #     './hc3_adt.pt',
+    #     './hc3_row.pt',
+    #     './dpo_2_3.pt',
+    #     './dpo_3_2.pt',
+    #     './dpo_no_blue.pt',
+    #     './ppo_1.pt',
+    # ]:
+    #     test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
+
+    test_dir = './dp_100/'
     for model_path in [
         './dpo_1.pt',
-        # './dpo_1_2.pt',
-        # './dpo_3.pt',
-        # './dpo_2.pt',
-        # './hc3_adt.pt',
-        # './hc3_row.pt',
-        # './dpo_2_3.pt',
-        # './dpo_3_2.pt',
-        # './dpo_no_blue.pt',
-        # './ppo_1.pt',
-    ]:
-        test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
-
-    test_dir = './dpo_1/'
-    for model_path in [
-        # './dpo_1.pt',
-        # './dpo_1_2.pt',
-        # './dpo_3.pt',
-        # './dpo_2.pt',
-        # './hc3_adt.pt',
-        # './hc3_row.pt',
-        # './dpo_2_3.pt',
-        # './dpo_3_2.pt',
+        './dpo_1_2.pt',
+        './hc3_adt.pt',
+        './hc3_row.pt',
+        './dpo_2_3.pt',
+        './dpo_3_2.pt',
         './dpo_no_blue.pt',
-        # './ppo_1.pt',
+        './ppo_1.pt',
     ]:
         test_classifier_base_dir('roberta-base', model_path, test_dir, 1000)
 
