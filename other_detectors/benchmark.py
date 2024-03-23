@@ -8,6 +8,7 @@
 import argparse
 import csv
 import datetime
+import gc
 import json
 import os
 import random
@@ -15,6 +16,7 @@ import re
 import time
 from functools import partial
 
+import torch
 from tqdm import tqdm
 
 import data_convertor
@@ -292,8 +294,10 @@ def test_classifier_and_dataset(classifier, data_set):
             percent = round(1.0 * (i) / len(all_data) * 100, 2)
             # print('test process : %s [%d/%d]' % (str(percent) + '%', i, len(all_data)), end='\r')
         except Exception as e:
-            print(e)
-            # print('error content:' + content)
+            # print(e)
+            # print('error content:' + content)s
+            pass
+
     print("test process end", end='\n')
 
     if human_total != 0:
@@ -482,7 +486,10 @@ def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl
                 json_arr = json.load(f)
 
         # random.shuffle(json_arr)
-        if nums >= 0:
+        if nums is None:
+            test_datas['human'] = [x for x in json_arr if x['label'] == 0]
+            test_datas['ai'] = [x for x in json_arr if x['label'] == 1]
+        elif nums >= 0:
             test_datas['human'] = [x for x in json_arr if x['label'] == 0][0:nums]
             test_datas['ai'] = [x for x in json_arr if x['label'] == 1][0:nums]
         else:
@@ -506,8 +513,11 @@ def test_hc3_mix_multi(method, direct_files, nums=200, file_type='two_type_jsonl
         test_result['file'] = direct_file
         test_results.append(test_result)
 
+    del classifier
+    gc.collect()  # 执行垃圾回收
+    # torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
     end_time = datetime.datetime.now()
-    print("end: " + str(end_time - start_time))
+    # print("end: " + str(end_time - start_time))
     return test_results
 
 
@@ -858,17 +868,100 @@ if __name__ == '__main__':
     # test_all_method_dir('../my_detector/dpo_test/qwen/', 'qwen_')
     # test_all_method_dir('../my_detector/dpo_test/dpo_1/', 'dpo1_')
     # test_all_method_dir('../my_detector/dpo_test/dp/', 'dp_')
-    test_all_method_dir('../my_detector/dpo_test/dp_100/', 'dp_100', excluded = [
-    'gltr',
-    'hc3_ling',
-    'hc3_single',
-    'intrinsic-dim',
-    'llmdet',
-    'openai-roberta-base',
-    'openai-roberta-large',
-    'radar-vicuna',
-    'detect_gpt',
+    # test_all_method_dir('../my_detector/dpo_test/dp_100/', 'dp_100', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
     # 'hc3_single_ft',
     # 'radar_vicuna_ft',
-    ])
+    # ])
 
+    # test_all_method_dir('../my_detector/moe_test/data/nature/glm/', 'moe_glm', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    # test_all_method_dir('../my_detector/moe_test/data/nature/mix/', 'moe_mix', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    # test_all_method_dir('../my_detector/moe_test/data/nature/qwen/', 'moe_qwen', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    # test_all_method_dir('../my_detector/moe_test/data/adversary/qwen/', 'adt_qwen', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/adversary/dp/', 'adt_dp', excluded = [
+    # 'gltr',
+    # 'hc3_ling',
+    # 'hc3_single',
+    # 'intrinsic-dim',
+    # 'llmdet',
+    # 'openai-roberta-base',
+    # 'openai-roberta-large',
+    # 'radar-vicuna',
+    # 'detect_gpt',
+    'hc3_single_ft',
+    'radar_vicuna_ft',
+    ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/adversary/dpo/', 'adt_dp', excluded = [
+    # 'gltr',
+    # 'hc3_ling',
+    # 'hc3_single',
+    # 'intrinsic-dim',
+    # 'llmdet',
+    # 'openai-roberta-base',
+    # 'openai-roberta-large',
+    # 'radar-vicuna',
+    # 'detect_gpt',
+    'hc3_single_ft',
+    'radar_vicuna_ft',
+    ], max_nums=None)
