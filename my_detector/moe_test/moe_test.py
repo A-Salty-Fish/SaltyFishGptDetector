@@ -1,3 +1,8 @@
+import csv
+import datetime
+import json
+import os
+
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
@@ -16,9 +21,13 @@ def get_test_dataloader_and_labels(tokenizer, test_data_path="../Deberta_test/da
 
 class MyTestDataset(Dataset):
     def __init__(self, dataframe, tokenizer, max_nums=None):
-        texts = [x['content'] for i, x in dataframe.iterrows()][0: max_nums]
 
-        self.labels = [x['label'] for i, x in dataframe.iterrows()][0: max_nums]
+        if max_nums is not  None:
+            texts = [x['content'] for i, x in dataframe.iterrows()][0: max_nums]
+            self.labels = [x['label'] for i, x in dataframe.iterrows()][0: max_nums]
+        else:
+            texts = [x['content'] for i, x in dataframe.iterrows()]
+            self.labels = [x['label'] for i, x in dataframe.iterrows()]
 
         self.texts = [tokenizer(text, padding='max_length',
                                 max_length=512,
@@ -163,6 +172,33 @@ def get_acc(predictions, test_labels):
     }
 
 
+def get_gate_test_results(gate_model, tokenizer, model_1, model_2, files, out_file_name = 'result.json'):
+    results = []
+    for file in files:
+        print(file)
+        test_dataloader, test_labels = get_test_dataloader_and_labels(tokenizer, file, 16, None)
+        text_predictions = gate_prediction(gate_model, model_1, model_2, test_dataloader)
+        acc_result = get_acc(text_predictions, test_labels)
+        acc_result['file'] = file
+        results.append(acc_result)
+    return results
+    # output_test_result_table(results, 'result')
+
+
+def output_test_result_table(results, output_file_name=None):
+    if output_file_name is None:
+        output_file_name = 'output_result' + str(datetime.datetime.now()) + '.csv'
+    if isinstance(results, list):
+        pass
+    else:
+        results = [results]
+    with open(output_file_name + '.csv', 'w', encoding='utf-8') as output_file:
+        fieldnames = results[0].keys()
+        writer = csv.DictWriter(output_file, fieldnames=fieldnames)
+        # 写入标题行
+        writer.writeheader()
+        # 写入数据行
+        writer.writerows(results)
 
 if __name__ == '__main__':
     model_name = 'roberta-base'
@@ -171,11 +207,25 @@ if __name__ == '__main__':
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
     model2_path = '../dpo_test/dpo_1_2.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
-    test_path = "best_model.pt"
-    test_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
+    test_path = "moe_gate_1.pt"
     test_model, test_tokenizer = init_test_model_and_tokenizer(test_model_path=test_path)
-    test_dataloader, test_labels = get_test_dataloader_and_labels(test_tokenizer, test_file, 16, 1000)
-    text_predictions = gate_prediction(test_model, model1, model2, test_dataloader)
-    acc_result = get_acc(text_predictions, test_labels)
-    print(acc_result)
+
+    # test_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
+    # test_dataloader, test_labels = get_test_dataloader_and_labels(test_tokenizer, test_file, 16, 1000)
+    # text_predictions = gate_prediction(test_model, model1, model2, test_dataloader)
+    # acc_result = get_acc(text_predictions, test_labels)
+    # print(acc_result)
+    dirs = [
+        './data/adversary/qwen/',
+        './data/adversary/dpo/',
+        './data/adversary/dp/',
+        # './data/nature/mix/',
+        # './data/nature/qwen/',
+        # './data/nature/glm/',
+    ]
+    results = []
+    for dir in dirs:
+        results += get_gate_test_results(test_model, test_tokenizer, model1, model2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
+        output_test_result_table(results, 'result2')
+
     pass

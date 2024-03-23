@@ -35,10 +35,27 @@ class MyTrainDataset(Dataset):
         return min(len(self.texts), len(self.labels))
 
 
-def load_train_and_val_df(train_data_path="../Deberta_test/data/hc3_all.jsonl.train", val_size=0.2, random_state=0):
-    train_file = pd.read_json(train_data_path)
-    train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
-    return train_df, val_df
+def load_train_and_val_df(train_data_paths=["../Deberta_test/data/hc3_all.jsonl.train"], val_size=0.2, random_state=0):
+    # 存储多个训练集和验证集的列表
+    train_dfs = []
+    val_dfs = []
+    print(train_data_paths)
+    # 假设有多个文件，依次读取并拆分
+    for file in train_data_paths:
+        print(file)
+        data = pd.read_json(file)
+        train_df, val_df = train_test_split(data, test_size=val_size, random_state=random_state)
+        train_dfs.append(train_df)
+        val_dfs.append(val_df)
+
+    # 合并多个训练集和验证集
+    final_train_df = pd.concat(train_dfs, axis=0)
+    final_val_df = pd.concat(val_dfs, axis=0)
+
+    return final_train_df, final_val_df
+    # train_file = pd.read_json(train_data_path)
+    # train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
+    # return train_df, val_df
 
 
 def get_train_and_val_dataloader(train_df, val_df, tokenizer, batch_size=16, shuffle=False):
@@ -274,8 +291,18 @@ if __name__ == '__main__':
 
     base_model, base_tokenizer = init_test_model_and_tokenizer(model_name, model_name)
 
-    train_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
-    train_df, val_df = load_train_and_val_df(train_file)
+    # train_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
+    train_files = [
+        './data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
+        './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
+        './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
+        './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
+        './data/adversary/qwen/7.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+    ]
+    train_df, val_df = load_train_and_val_df(train_data_paths=train_files, random_state=1)
     train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, base_tokenizer, 16)
     train(
         base_model,
@@ -283,4 +310,5 @@ if __name__ == '__main__':
         model2,
         train_dataloader,
         val_dataloader,
+        save_name='moe_gate_1.pt'
     )
