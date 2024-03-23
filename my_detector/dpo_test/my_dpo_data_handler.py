@@ -195,14 +195,20 @@ def test_qwen_score():
 
 def get_dir_blue_scores(model, tokenizer,dir):
     print(dir)
+    dir_name = dir.replace('/', '')
     for file in os.listdir(dir):
         if file.endswith('.jsonl'):
+            # if file.find('flant5') != -1 or file.find('dolly') != -1 or file.find('davinci') != -1 or file.find('cohere') != -1 or file.find('row') != -1 or file.find('polish') != -1:
+            #     continue
+            if file.find('hc3_plus') == -1:
+                continue
             print(file)
-            with open(dir + file, 'r', encoding='utf-8') as in_f, open('./' + file + '.score', 'a', encoding='utf-8') as out_f:
+            with open(dir + file, 'r', encoding='utf-8') as in_f, open('./' + file + dir_name + '.score', 'w', encoding='utf-8') as out_f:
                 json_objs = []
                 for line in in_f:
                     json_obj = json.loads(line)
                     json_objs.append(json_obj)
+                json_objs = json_objs[0:1000]
                 for json_obj in tqdm(json_objs):
                     try:
                         out_f.write(str(get_bleu_score(model, tokenizer, json_obj['ai'], json_obj['ai_rewrite'])) + '\n')
@@ -343,7 +349,9 @@ Bear in mind, P/\E comparisons only provide a partial insight!'''
 
     # test_qwen_score()
 
-    get_dir_blue_scores(model, tokenizer,'./dp_20/')
-    get_dir_blue_scores(model, tokenizer,'./dp_100/')
+    # get_dir_blue_scores(model, tokenizer,'./dp_20/')
+    # get_dir_blue_scores(model, tokenizer,'./dp_100/')
+    get_dir_blue_scores(model, tokenizer,'./qwen/')
+    get_dir_blue_scores(model, tokenizer,'./dpo_1/')
 
     pass
