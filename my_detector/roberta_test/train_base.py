@@ -370,6 +370,19 @@ def begin_train_hc3_adt_alpha(alpha):
         adv_loss_alpha=alpha
     )
 
+
+def begin_train_moe():
+    train_file = './moe_all.train'
+    train_df, val_df = load_train_and_val_df(train_file)
+    adversary_generator = init_adversary_generator(train_df, random_generate=False, random_select_key=None)
+    begin_train(
+        train_file,
+        adversary_generator,
+        'moe_adt.pt'
+    )
+    pass
+
+
 if __name__ == '__main__':
     # batch_size = 16
     # train_file = './data/hc3_row.train'
@@ -391,6 +404,7 @@ if __name__ == '__main__':
     # begin_train_hc3_random_adt()
     # begin_train_hc3_random_select_adt()
     # begin_train_hc3_row_adt()
-    begin_train_hc3_adt_alpha(0.0)
-    begin_train_hc3_adt_alpha(10.0)
+    # begin_train_hc3_adt_alpha(0.0)
+    # begin_train_hc3_adt_alpha(10.0)
+    begin_train_moe()
     pass
