@@ -106,7 +106,7 @@ def get_text_predictions(model, loader, bar=0.5):
 
 
 
-def gate_prediction(model, model_1, model_2, loader, gate_bar=0.5, classify_bar=0.5):
+def gate_prediction(model, model_1, model_2, loader, gate_bar=0.5, classify_bar=0.5, log_file=None, actual_labels=None):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -116,6 +116,7 @@ def gate_prediction(model, model_1, model_2, loader, gate_bar=0.5, classify_bar=
     model_2_result = get_text_predictions(model_2, loader, classify_bar)
 
     results_predictions = []
+    total_i= 0
     with torch.no_grad():
         model.eval()
         for data_input, _ in tqdm(loader):
@@ -123,13 +124,49 @@ def gate_prediction(model, model_1, model_2, loader, gate_bar=0.5, classify_bar=
             input_ids = data_input['input_ids'].squeeze(1).to(device)
 
             output = model(input_ids, attention_mask)
+            if log_file is not None and actual_labels is not None:
+                with open(log_file, 'a', encoding='utf-8') as log_f:
+                    for i in range(0, len(output)):
+                        log_f.write(str(output[i][0].item()) + ',' + str(model_1_result[i]) + ',' + str(model_2_result[i]) + '; ' + str(actual_labels[i]) + '\n')
 
             # output = (output > bar).int()
             for i in range(0, len(output)):
-                if output[i][0] >= gate_bar:
-                    results_predictions.append(model_2_result[i])
-                elif output[i][0] < gate_bar:
-                    results_predictions.append(model_1_result[i])
+                if output[i][0].item() > gate_bar:
+                    results_predictions.append(model_2_result[total_i])
+                elif output[i][0].item() <= gate_bar:
+                    results_predictions.append(model_1_result[total_i])
+
+
+                # if model_1_result[i] == 1:
+                #     results_predictions.append(1)
+                # elif model_2_result[i] == 0:
+                #     results_predictions.append(0)
+                # else:
+                #     if output[i][0] >= gate_bar:
+                #         results_predictions.append(model_2_result[i])
+                #     else:
+                #         results_predictions.append(model_1_result[i])
+
+                # if model_1_result[i] == 1:
+                #     results_predictions.append(1)
+                # else:
+                #     if output[i][0] >= gate_bar:
+                #         results_predictions.append(model_2_result[i])
+                #     else:
+                #         results_predictions.append(model_1_result[i])
+
+                # if model_1_result[total_i] == 1:
+                #     results_predictions.append(1)
+                # else:
+                #     if model_2_result[total_i] == 0:
+                #         results_predictions.append(0)
+                #     else:
+                #         if output[i][0] <= gate_bar:
+                #             results_predictions.append(model_1_result[total_i])
+                #         else:
+                #             results_predictions.append(model_2_result[total_i])
+                total_i+=1
+
 
     return results_predictions
 
@@ -172,17 +209,28 @@ def get_acc(predictions, test_labels):
     }
 
 
-def get_gate_test_results(gate_model, tokenizer, model_1, model_2, files, out_file_name = 'result.json'):
+def get_gate_test_results(gate_model, tokenizer, model_1, model_2, files):
     results = []
     for file in files:
         print(file)
         test_dataloader, test_labels = get_test_dataloader_and_labels(tokenizer, file, 16, None)
-        text_predictions = gate_prediction(gate_model, model_1, model_2, test_dataloader)
+        text_predictions = gate_prediction(gate_model, model_1, model_2, test_dataloader, log_file=file.split('/')[-1] + '.log')
         acc_result = get_acc(text_predictions, test_labels)
         acc_result['file'] = file
         results.append(acc_result)
     return results
     # output_test_result_table(results, 'result')
+
+def get_single_test_results(model, tokenizer, files):
+    results = []
+    for file in files:
+        print(file)
+        test_dataloader, test_labels = get_test_dataloader_and_labels(tokenizer, file, 16, None)
+        text_predictions = get_text_predictions(model, test_dataloader)
+        acc_result = get_acc(text_predictions, test_labels)
+        acc_result['file'] = file
+        results.append(acc_result)
+    return results
 
 
 def output_test_result_table(results, output_file_name=None):
@@ -203,11 +251,12 @@ def output_test_result_table(results, output_file_name=None):
 if __name__ == '__main__':
     model_name = 'roberta-base'
 
-    model1_path = '../dpo_test/hc3_adt.pt'
+    model1_path = '../roberta_test/moe_adt3.pt'
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
-    model2_path = '../dpo_test/dpo_1_2.pt'
+
+    model2_path = '../dpo_test/moe_3.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
-    test_path = "moe_gate_1.pt"
+    test_path = "moe_gate_3.pt"
     test_model, test_tokenizer = init_test_model_and_tokenizer(test_model_path=test_path)
 
     # test_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
@@ -219,13 +268,23 @@ if __name__ == '__main__':
         './data/adversary/qwen/',
         './data/adversary/dpo/',
         './data/adversary/dp/',
-        # './data/nature/mix/',
-        # './data/nature/qwen/',
-        # './data/nature/glm/',
+        './data/nature/mix/',
+        './data/nature/qwen/',
+        './data/nature/glm/',
     ]
+
     results = []
     for dir in dirs:
         results += get_gate_test_results(test_model, test_tokenizer, model1, model2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
-        output_test_result_table(results, 'result2')
+        output_test_result_table(results, 'moe3')
+
+    # results = []
+    # for dir in dirs:
+    #     results += get_single_test_results(model1, tokenizer1, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
+    #     output_test_result_table(results, 'hc3_adt4')
+    # results = []
+    # for dir in dirs:
+    #     results += get_single_test_results(model2, tokenizer2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
+    #     output_test_result_table(results, 'dpo4')
 
     pass

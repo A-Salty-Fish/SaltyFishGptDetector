@@ -52,6 +52,11 @@ def load_train_and_val_df(train_data_paths=["../Deberta_test/data/hc3_all.jsonl.
     final_train_df = pd.concat(train_dfs, axis=0)
     final_val_df = pd.concat(val_dfs, axis=0)
 
+    # final_train_df.drop_duplicates(subset=['content'], keep='first', inplace=True)
+    # final_train_df.reset_index(drop=True, inplace=True)
+    # final_val_df.drop_duplicates(subset=['content'], keep='first', inplace=True)
+    # final_val_df.reset_index(drop=True, inplace=True)
+
     return final_train_df, final_val_df
     # train_file = pd.read_json(train_data_path)
     # train_df, val_df = train_test_split(train_file, test_size=val_size, random_state=random_state)
@@ -165,6 +170,26 @@ def convert_train_to_actual_label(train_label,  model_1, model_2, attention_mask
             results.append(0.0)
         elif model_2_results[i][0] == cur_label:
             results.append(1.0)
+
+        # if model_1_results[i][0] != cur_label and model_2_results[i][0] != cur_label:
+        #     results.append(1.0)
+        # elif model_1_results[i][0] == cur_label and model_2_results[i][0] == cur_label:
+        #     results.append(0.0)
+        # elif model_1_results[i][0] == cur_label:
+        #     results.append(0.0)
+        # elif model_2_results[i][0] == cur_label:
+        #     results.append(1.0)
+
+        # if model_1_results[i][0] == 1 and cur_label == 1:
+        #     results.append(0.0)
+        # elif model_1_results[i][0] == 0 and cur_label == 0:
+        #     results.append(0.0)
+        # else:
+        #     if model_2_results[i][0] == 1 and cur_label == 1:
+        #         results.append(1.0)
+        #     else:
+        #         results.append(0.0)
+
     return torch.from_numpy(np.array(results)).to(device)
 
 
@@ -222,9 +247,9 @@ def train(base_model,
             # acc = (output == actual_label.unsqueeze(1)).sum().item()
             acc = 0
             for i in range(0, len(output)):
-                if (output[i][0] >= bar) and (actual_label[i] >= bar):
+                if (output[i][0] > bar) and (actual_label[i] > bar):
                     acc+=1
-                elif (output[i][0] < bar) and (actual_label[i] < bar):
+                elif (output[i][0] <= bar) and (actual_label[i] <= bar):
                     acc+=1
 
             total_acc_train += acc
@@ -233,7 +258,6 @@ def train(base_model,
             optimizer.step()
             optimizer.zero_grad()
 
-        total_loss_adversary_train = 0
 
         with torch.no_grad():
             total_acc_val = 0
@@ -272,8 +296,8 @@ def train(base_model,
                   f'| Val Loss: {total_loss_val / len(val_dataloader): .3f} '
                   f'| Val Accuracy: {total_acc_val / len(val_dataloader.dataset): .3f}')
 
-            if best_val_loss > total_loss_val + total_loss_adversary_train:
-                best_val_loss = total_loss_val + total_loss_adversary_train
+            if best_val_loss > total_loss_val:
+                best_val_loss = total_loss_val
                 torch.save(base_model, save_name)
                 print("Saved model")
                 early_stopping_threshold_count = 0
@@ -284,9 +308,9 @@ def train(base_model,
 if __name__ == '__main__':
     model_name = 'roberta-base'
 
-    model1_path = '../dpo_test/hc3_adt.pt'
+    model1_path = '../roberta_test/moe_adt3.pt'
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
-    model2_path = '../dpo_test/dpo_1_2.pt'
+    model2_path = '../dpo_test/moe_3.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
 
     base_model, base_tokenizer = init_test_model_and_tokenizer(model_name, model_name)
@@ -294,21 +318,21 @@ if __name__ == '__main__':
     # train_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
     train_files = [
         './data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
         './data/adversary/qwen/7.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
     ]
     train_df, val_df = load_train_and_val_df(train_data_paths=train_files, random_state=1)
-    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, base_tokenizer, 16)
+    train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, base_tokenizer, 8, True)
     train(
         base_model,
         model1,
         model2,
         train_dataloader,
         val_dataloader,
-        save_name='moe_gate_1.pt'
+        save_name='moe_gate_8.pt'
     )
