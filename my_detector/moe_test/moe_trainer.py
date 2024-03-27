@@ -334,5 +334,5 @@ if __name__ == '__main__':
         model2,
         train_dataloader,
         val_dataloader,
-        save_name='moe_gate_8.pt'
+        save_name='moe_gate_3.pt'
     )

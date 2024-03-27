@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
@@ -266,15 +268,16 @@ def init_model_and_tokenizer(base_model_name='roberta-base'):
     return model, tokenizer
 
 
-def init_adversary_generator(train_df, random_generate=False,random_select_key=None):
-    local_val_file_map = {
-        'rewrite': './data/open_qa.rewrite.mix.jsonl.train',
-        'continue': './data/open_qa.continue.mix.jsonl.train',
-        'academic': './data/open_qa.academic.mix.jsonl.train',
-        'difficult': './data/open_qa.difficult.mix.jsonl.train',
-        'easy': './data/open_qa.easy.mix.jsonl.train',
-        'qa': './data/open_qa.mix.jsonl.train',
-    }
+def init_adversary_generator(train_df, random_generate=False,random_select_key=None, local_val_file_map=None, file_load_func=None):
+    if local_val_file_map is None:
+        local_val_file_map = {
+            'rewrite': './data/open_qa.rewrite.mix.jsonl.train',
+            'continue': './data/open_qa.continue.mix.jsonl.train',
+            'academic': './data/open_qa.academic.mix.jsonl.train',
+            'difficult': './data/open_qa.difficult.mix.jsonl.train',
+            'easy': './data/open_qa.easy.mix.jsonl.train',
+            'qa': './data/open_qa.mix.jsonl.train',
+        }
     prompts_map = {
         'rewrite': 'Please rewrite the following content, {without any useless content}:',
         'continue': 'Please continue to write the following content, {without any useless content}:',
@@ -284,14 +287,23 @@ def init_adversary_generator(train_df, random_generate=False,random_select_key=N
         'qa': 'The following is a response to a question, please re-answer the question based on this response, {without any useless content}:'
     }
 
-
-    adversary_generator = AdversaryGenerator(
-        local_val_files_map=local_val_file_map,
-        prompts_map=prompts_map,
-        train_df=train_df,
-        random_generate=random_generate,
-        random_select_key=random_select_key
-    )
+    if file_load_func is None:
+        adversary_generator = AdversaryGenerator(
+            local_val_files_map=local_val_file_map,
+            prompts_map=prompts_map,
+            train_df=train_df,
+            random_generate=random_generate,
+            random_select_key=random_select_key
+        )
+    else:
+        adversary_generator = AdversaryGenerator(
+            local_val_files_map=local_val_file_map,
+            prompts_map=prompts_map,
+            train_df=train_df,
+            random_generate=random_generate,
+            random_select_key=random_select_key,
+            file_load_func=file_load_func
+        )
 
     return adversary_generator
 
@@ -372,13 +384,28 @@ def begin_train_hc3_adt_alpha(alpha):
 
 
 def begin_train_moe():
-    train_file = './moe_all.train'
+    train_file = '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train'
     train_df, val_df = load_train_and_val_df(train_file)
-    adversary_generator = init_adversary_generator(train_df, random_generate=False, random_select_key=None)
+    local_val_file_map = {
+        'rewrite': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.rewrite',
+        'continue': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.continue',
+        'academic': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.academic',
+        'difficult': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.difficult',
+        'easy': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.easy',
+        'qa': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.qa',
+    }
+    def json_file_load_func(self, file):
+        print("begin load local file: " + file)
+        with open(file, 'r', encoding='utf-8') as in_f:
+            file_objs = json.load(in_f)
+        print("load local file successful: " + file)
+        print("data nums: " + str(len(file_objs)))
+        return file_objs
+    adversary_generator = init_adversary_generator(train_df, random_generate=False, random_select_key=None, local_val_file_map=local_val_file_map, file_load_func=json_file_load_func)
     begin_train(
         train_file,
         adversary_generator,
-        'moe_adt.pt'
+        'moe_adt3.pt'
     )
     pass
 

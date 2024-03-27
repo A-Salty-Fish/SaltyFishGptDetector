@@ -329,6 +329,37 @@ def generate_my_paraphase_datas(file_path, model, tokenizer):
     pass
 
 
+def generate_multi_prompt_data(model, tokenizer, file, max_nums=100):
+    prompts_map = {
+        'rewrite': 'Please rewrite the following content, {without any useless content}:',
+        'continue': 'Please continue to write the following content, {without any useless content}:',
+        'easy': 'Please change the following content to make it easier to understand, {without any useless content}:',
+        'academic': 'Please change the following content to be more academic and professional, {without any useless content}:',
+        'difficult': 'Please change the following content to make it more difficult to understand, {without any useless content}:',
+        'qa': 'The following is a response to a question, please re-answer the question based on this response, {without any useless content}:'
+    }
+
+    with open(file, 'r', encoding='utf-8') as in_f:
+        json_objs = json.load(in_f)
+        for prompt in prompts_map:
+            results = []
+            random.shuffle(json_objs)
+            for obj in tqdm(json_objs[0: max_nums]):
+                results.append({
+                    'label': 0,
+                    'content': obj['content']
+                })
+                results.append({
+                    'label': 1,
+                    'content': mix_chat(model, tokenizer, prompts_map[prompt] + obj['content'])
+                })
+            with open(file + '.' + prompt, 'w', encoding='utf-8') as out_f:
+                out_f.write(json.dumps(results))
+
+
+
+
+
 if __name__ == '__main__':
     # model, tokenizer = init_mix_model_and_tokenizer()
     # generate_mix_datas('../../data_collector/row_data/arxiv_paras/7.jsonl', model, tokenizer)
@@ -380,11 +411,14 @@ if __name__ == '__main__':
     # gc.collect()  # 执行垃圾回收
     # torch.cuda.empty_cache()  # 清空CUDA缓存，释放GPU内存
 
-    my_model, my_tokenizer = load_my_paraphase_model(peft_path='../dpo_test/dpo_1/1/final_checkpoint/')
-    generate_my_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
-    generate_my_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
-    generate_my_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
-    generate_my_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    # my_model, my_tokenizer = load_my_paraphase_model(peft_path='../dpo_test/dpo_1/1/final_checkpoint/')
+    # generate_my_paraphase_datas('./data/nature/qwen/7.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    # generate_my_paraphase_datas('./data/nature/qwen/8.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    # generate_my_paraphase_datas('./data/nature/qwen/9.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+    # generate_my_paraphase_datas('./data/nature/qwen/10.jsonl.qwen.rewrite.jsonl', my_model, my_tokenizer)
+
+    model,tokenizer = init_mix_model_and_tokenizer()
+    generate_multi_prompt_data(model, tokenizer, './data/nature/mix/7.jsonl.rewrite.jsonl.train')
 
     pass
 

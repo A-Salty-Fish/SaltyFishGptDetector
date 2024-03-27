@@ -156,7 +156,7 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'hc3_single_ft':
-        model = hc3_single_ft.init_classifier()
+        model = hc3_single_ft.init_classifier('./hc3_single_ft_moe_3/checkpoint-165')
 
         def classify(text):
             return hc3_single_ft.classify_is_human(model, text=text)
@@ -164,7 +164,7 @@ def get_classifier(method):
         classifier = classify
 
     if method == 'radar_vicuna_ft':
-        model = radar_vicuna_ft.init_classifier()
+        model = radar_vicuna_ft.init_classifier('./radar_vicuna_ft_moe_3/checkpoint-165')
 
         def classify(text):
             return radar_vicuna_ft.classify_is_human(model, text=text)
@@ -938,30 +938,118 @@ if __name__ == '__main__':
     # 'radar_vicuna_ft',
     # ], max_nums=None)
 
-    test_all_method_dir('../my_detector/moe_test/data/adversary/dp/', 'adt_dp', excluded = [
-    # 'gltr',
-    # 'hc3_ling',
-    # 'hc3_single',
-    # 'intrinsic-dim',
-    # 'llmdet',
-    # 'openai-roberta-base',
-    # 'openai-roberta-large',
-    # 'radar-vicuna',
-    # 'detect_gpt',
-    'hc3_single_ft',
-    'radar_vicuna_ft',
+    # test_all_method_dir('../my_detector/moe_test/data/adversary/dp/', 'adt_dp', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    # test_all_method_dir('../my_detector/moe_test/data/adversary/dpo/', 'adtdpo', excluded = [
+    # # 'gltr',
+    # # 'hc3_ling',
+    # # 'hc3_single',
+    # # 'intrinsic-dim',
+    # # 'llmdet',
+    # # 'openai-roberta-base',
+    # # 'openai-roberta-large',
+    # # 'radar-vicuna',
+    # # 'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    # ], max_nums=None)
+
+    # fine tuned
+
+
+    test_all_method_dir('../my_detector/moe_test/data/nature/glm/', 'moe_glm2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
     ], max_nums=None)
 
-    test_all_method_dir('../my_detector/moe_test/data/adversary/dpo/', 'adt_dp', excluded = [
-    # 'gltr',
-    # 'hc3_ling',
-    # 'hc3_single',
-    # 'intrinsic-dim',
-    # 'llmdet',
-    # 'openai-roberta-base',
-    # 'openai-roberta-large',
-    # 'radar-vicuna',
-    # 'detect_gpt',
-    'hc3_single_ft',
-    'radar_vicuna_ft',
+    test_all_method_dir('../my_detector/moe_test/data/nature/mix/', 'moe_mix2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
     ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/nature/qwen/', 'moe_qwen2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/adversary/qwen/', 'adt_qwen2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/adversary/dp/', 'adt_dp2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    ], max_nums=None)
+
+    test_all_method_dir('../my_detector/moe_test/data/adversary/dpo/', 'adtdpo2', excluded = [
+    'gltr',
+    'hc3_ling',
+    'hc3_single',
+    'intrinsic-dim',
+    'llmdet',
+    'openai-roberta-base',
+    'openai-roberta-large',
+    'radar-vicuna',
+    'detect_gpt',
+    # 'hc3_single_ft',
+    # 'radar_vicuna_ft',
+    ], max_nums=None)
+

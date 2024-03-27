@@ -987,7 +987,33 @@ if __name__ == '__main__':
     #     '1'
     # )
 
-    train_file = '../roberta_test/data/hc3_row.train'
+    # with open('../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train', 'r', encoding='utf-8') as train_f:
+    #     ai_texts = [x['content'] for x in json.load(train_f) if x['label'] == 1]
+    # train_generator(
+    #     'roberta-base', '../roberta_test/moe_adt3.pt',
+    #     "mistralai/Mistral-7B-Instruct-v0.2", "mistralai/Mistral-7B-Instruct-v0.2",
+    #     3, 10,
+    #     None,
+    #     ai_texts,
+    #     1000,
+    #     './moe3/'
+    #     '1'
+    # )
+
+    # train_file = '../roberta_test/data/hc3_row.train'
+    # train_df, val_df = load_train_and_val_df(train_file)
+    # train_classifier(
+    #     'roberta-base', 'roberta-base',
+    #     train_df, val_df,
+    #     learning_rate=1e-5,
+    #     epochs=5,
+    #     batch_size=16,
+    #     save_name='ppo_1.pt',
+    #     adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './ppo_1/final_checkpoint'),
+    #     adversary_data_rate=2
+    # )
+
+    train_file = '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train'
     train_df, val_df = load_train_and_val_df(train_file)
     train_classifier(
         'roberta-base', 'roberta-base',
@@ -995,8 +1021,8 @@ if __name__ == '__main__':
         learning_rate=1e-5,
         epochs=5,
         batch_size=16,
-        save_name='ppo_1.pt',
-        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './ppo_1/final_checkpoint'),
+        save_name='moe_3.pt',
+        adversary_generator=MyGenerator('mistralai/Mistral-7B-Instruct-v0.2', './moe3/1/final_checkpoint'),
         adversary_data_rate=2
     )
 

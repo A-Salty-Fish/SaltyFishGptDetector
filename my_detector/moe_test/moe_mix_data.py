@@ -53,14 +53,14 @@ if __name__ == '__main__':
 
     moe_train_files = [
         './data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
-        './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
+        # './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
         './data/adversary/qwen/7.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
-        './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+        # './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
     ]
 
-    merge_train_file(moe_train_files, 'moe_all.train')
+    merge_train_file(moe_train_files, 'arxiv_qwen_7.train')
     pass
