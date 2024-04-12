@@ -306,11 +306,42 @@ def train(base_model,
 
 
 if __name__ == '__main__':
+    # model_name = 'roberta-base'
+    #
+    # model1_path = '../roberta_test/moe_adt3.pt'
+    # model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
+    # model2_path = '../dpo_test/moe_3.pt'
+    # model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
+    #
+    # base_model, base_tokenizer = init_test_model_and_tokenizer(model_name, model_name)
+    #
+    # # train_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
+    # train_files = [
+    #     './data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
+    #     # './data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
+    #     # './data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
+    #     # './data/nature/qwen/10.jsonl.qwen.rewrite.jsonl.train',
+    #     # './data/adversary/qwen/7.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+    #     # './data/adversary/qwen/8.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+    #     # './data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+    #     # './data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
+    # ]
+    # train_df, val_df = load_train_and_val_df(train_data_paths=train_files, random_state=1)
+    # train_dataloader, val_dataloader = get_train_and_val_dataloader(train_df, val_df, base_tokenizer, 8, True)
+    # train(
+    #     base_model,
+    #     model1,
+    #     model2,
+    #     train_dataloader,
+    #     val_dataloader,
+    #     save_name='moe_gate_3.pt'
+    # )
+
     model_name = 'roberta-base'
 
-    model1_path = '../roberta_test/moe_adt3.pt'
+    model1_path = '../roberta_test/moe_adt4.pt'
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
-    model2_path = '../dpo_test/moe_3.pt'
+    model2_path = '../dpo_test/moe_4.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
 
     base_model, base_tokenizer = init_test_model_and_tokenizer(model_name, model_name)
@@ -334,5 +365,5 @@ if __name__ == '__main__':
         model2,
         train_dataloader,
         val_dataloader,
-        save_name='moe_gate_3.pt'
+        save_name='moe_gate_4.pt'
     )

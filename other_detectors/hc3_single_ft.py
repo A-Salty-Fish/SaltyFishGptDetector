@@ -108,7 +108,8 @@ if __name__ == '__main__':
 
 
     moe_train_files = [
-        '../my_detector/moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train',
+        '../my_detector/moe_test/data/7_m4_chatGPT.json.train',
+        # '../my_detector/moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
@@ -118,7 +119,7 @@ if __name__ == '__main__':
         # '../my_detector/moe_test/data/adversary/qwen/9.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
         # '../my_detector/moe_test/data/adversary/qwen/10.jsonl.qwen.rewrite.jsonl.qwen.paraphase.jsonl.train',
     ]
-    train(model, tokenizer, moe_train_files, 'hc3_single_ft_moe_3')
+    train(model, tokenizer, moe_train_files, 'hc3_single_ft_moe_4')
 
 
 

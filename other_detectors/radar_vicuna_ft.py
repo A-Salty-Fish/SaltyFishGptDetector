@@ -107,7 +107,8 @@ if __name__ == '__main__':
     # train(model, tokenizer, ['../my_detector/roberta_test/data/hc3_row.train'], 'radar_vicuna_ft_adt')
 
     moe_train_files = [
-        '../my_detector/moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train',
+        '../my_detector/moe_test/data/7_m4_chatGPT.json.train',
+        # '../my_detector/moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/7.jsonl.qwen.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/8.jsonl.qwen.rewrite.jsonl.train',
         # '../my_detector/moe_test/data/nature/qwen/9.jsonl.qwen.rewrite.jsonl.train',
@@ -120,7 +121,7 @@ if __name__ == '__main__':
         # '../my_detector/roberta_test/data/hc3_mix_multi_prompt.train'
     ]
 
-    train(model, tokenizer, moe_train_files, 'radar_vicuna_ft_moe_3')
+    train(model, tokenizer, moe_train_files, 'radar_vicuna_ft_moe_4')
 
     # # model, tokenizer = init_test_model_and_tokenizer('./radar_vicuna_ft/checkpoint-3055/')
     # human_text = "I know this question has a lot of answers already, but I feel the answers are phrased either strongly against, or mildly for, co-signing. What it amounts down to is that this is a personal choice. You cannot receive reliable information as to whether or not co-signing this loan is a good move due to lack of information. The person involved is going to know the person they would be co-signing for, and the people on this site will only have their own personal preferences of experiences to draw from. You know if they are reliable, if they will be able to pay off the loan without need for the banks to come after you.  This site can offer general theories, but I think it should be kept in mind that this is wholly a personal decision for the person involved, and them alone to make based on the facts that they know and we do not."

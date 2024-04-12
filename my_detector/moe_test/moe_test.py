@@ -251,12 +251,12 @@ def output_test_result_table(results, output_file_name=None):
 if __name__ == '__main__':
     model_name = 'roberta-base'
 
-    model1_path = '../roberta_test/moe_adt3.pt'
+    model1_path = '../roberta_test/moe_adt4.pt'
     model1, tokenizer1 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model1_path)
 
-    model2_path = '../dpo_test/moe_3.pt'
+    model2_path = '../dpo_test/moe_4.pt'
     model2, tokenizer2 = init_test_model_and_tokenizer(base_model_name=model_name, test_model_path=model2_path)
-    test_path = "moe_gate_3.pt"
+    test_path = "moe_gate_4.pt"
     test_model, test_tokenizer = init_test_model_and_tokenizer(test_model_path=test_path)
 
     # test_file = '../roberta_test/data/hc3_mix_multi_prompt.train'
@@ -271,20 +271,21 @@ if __name__ == '__main__':
         './data/nature/mix/',
         './data/nature/qwen/',
         './data/nature/glm/',
+        './data/m4/'
     ]
 
     results = []
     for dir in dirs:
         results += get_gate_test_results(test_model, test_tokenizer, model1, model2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
-        output_test_result_table(results, 'moe3')
+        output_test_result_table(results, 'moe4')
 
-    # results = []
-    # for dir in dirs:
-    #     results += get_single_test_results(model1, tokenizer1, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
-    #     output_test_result_table(results, 'hc3_adt4')
-    # results = []
-    # for dir in dirs:
-    #     results += get_single_test_results(model2, tokenizer2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
-    #     output_test_result_table(results, 'dpo4')
+    results = []
+    for dir in dirs:
+        results += get_single_test_results(model1, tokenizer1, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
+        output_test_result_table(results, 'hc4')
+    results = []
+    for dir in dirs:
+        results += get_single_test_results(model2, tokenizer2, [dir + x for x in os.listdir(dir) if x.endswith('.test')])
+        output_test_result_table(results, 'dpo4')
 
     pass

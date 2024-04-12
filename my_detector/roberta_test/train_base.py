@@ -384,7 +384,7 @@ def begin_train_hc3_adt_alpha(alpha):
 
 
 def begin_train_moe():
-    train_file = '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train'
+    train_file = '../moe_test/data/7_m4_chatGPT.json.train'
     train_df, val_df = load_train_and_val_df(train_file)
     local_val_file_map = {
         'rewrite': '../moe_test/data/nature/mix/7.jsonl.rewrite.jsonl.train.rewrite',
@@ -405,7 +405,7 @@ def begin_train_moe():
     begin_train(
         train_file,
         adversary_generator,
-        'moe_adt3.pt'
+        'moe_adt4.pt'
     )
     pass
 
